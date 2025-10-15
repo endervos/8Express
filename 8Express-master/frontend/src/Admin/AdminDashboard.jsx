@@ -3,9 +3,11 @@ import Sidebar from './Sidebar';
 import StatsView from './StatsView';
 import UsersView from './UsersView';
 import PostsView from './PostsView';
+import { useNavigate } from 'react-router-dom';
 
-const AdminDashboard = ({ onNavigate }) => {
+const AdminDashboard = ({ userInfo, onLogout }) => {
   const [activeTab, setActiveTab] = useState('stats');
+  const navigate = useNavigate();
 
   const renderContent = () => {
     switch (activeTab) {
@@ -23,14 +25,18 @@ const AdminDashboard = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <Sidebar 
-        activeTab={activeTab} 
+      <Sidebar
+        activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onLogout={() => onNavigate('login')}
+        onLogout={() => {
+          onLogout();
+          navigate('/');
+        }}
+        onGoHome={() => navigate('/')}
       />
 
       {/* Main Content */}
-      <div className="flex-1 ml-64 p-8">
+      <div className="ml-64 flex-1 p-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800">
             {activeTab === 'stats' && 'Thống kê tổng quan'}
@@ -39,6 +45,7 @@ const AdminDashboard = ({ onNavigate }) => {
           </h2>
         </div>
 
+        {/* Render Content */}
         {renderContent()}
       </div>
     </div>
