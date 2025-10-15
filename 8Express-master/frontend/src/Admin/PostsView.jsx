@@ -133,8 +133,7 @@ const PostsView = () => {
             </div>
             
             <div className="flex gap-2 w-full sm:w-auto">
-              {/* Vấn đề mất khung dưới: Sử dụng select native, nếu vẫn bị clipping, cần kiểm tra CSS bên ngoài. 
-                  Ở đây tôi đảm bảo nó chiếm đủ chiều rộng trên mobile và không bị flex-shrink. */}
+              
               <select 
                 value={filterStatus}
                 onChange={(e) => {
@@ -373,7 +372,7 @@ const PostsView = () => {
               <div className="mb-6">
                 <h4 className="font-semibold text-gray-800 mb-2">Tags:</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedPost.tags.map((tag, index) => (
+                  {(selectedPost.tags||[]).map((tag, index) => (
                     <span key={index} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs">
                       #{tag}
                     </span>
@@ -395,7 +394,7 @@ const PostsView = () => {
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg text-center">
                   <MessageSquare className="mx-auto mb-2 text-green-600" size={24} />
-                  <p className="text-2xl font-bold text-green-600">{selectedPost.comments.length}</p>
+                  <p className="text-2xl font-bold text-green-600">{(selectedPost.comments||[]).length}</p>
                   <p className="text-sm text-gray-600">Bình luận</p>
                 </div>
               </div>
@@ -408,7 +407,7 @@ const PostsView = () => {
                 </h4>
                 {selectedPost.comments.length > 0 ? (
                   <div className="space-y-4">
-                    {selectedPost.comments.map((comment) => (
+                    {(selectedPost.comments||[]).map((comment) => (
                       <div key={comment.id} className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-start gap-3">
                           <img 

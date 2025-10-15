@@ -1,4 +1,5 @@
-// Mock Data for Blog Forum Admin
+
+// Dữ liệu giả định cho các người dùng
 
 export const mockUsers = [
   {
@@ -32,421 +33,235 @@ export const mockUsers = [
   {
     id: 3,
     name: 'Lê Văn Cường',
-    email: 'levanc@email.com',
-    avatar: 'https://i.pravatar.cc/150?img=8',
-    status: 'suspended',
+    email: 'levancuong@email.com',
+    avatar: 'https://i.pravatar.cc/150?img=11',
+    status: 'banned',
     role: 'user',
-    joinDate: '2024-03-22',
-    totalPosts: 12,
-    totalComments: 45,
+    joinDate: '2024-05-20',
+    totalPosts: 5,
+    totalComments: 12,
     phone: '0923456789',
-    bio: 'Học viên React và Node.js',
-    lastLogin: '2025-09-28 16:45',
-    suspendedReason: 'Vi phạm quy định đăng spam'
+    bio: 'Đã bị cấm vì vi phạm quy tắc',
+    lastLogin: '2024-08-01 10:00'
   },
   {
     id: 4,
-    name: 'Phạm Thị Diệu',
-    email: 'phamthid@email.com',
-    avatar: 'https://i.pravatar.cc/150?img=9',
+    name: 'Phạm Thị Duyên',
+    email: 'phamthiduyen@email.com',
+    avatar: 'https://i.pravatar.cc/150?img=8',
     status: 'active',
-    role: 'user',
-    joinDate: '2024-08-05',
-    totalPosts: 31,
-    totalComments: 98,
+    role: 'editor',
+    joinDate: '2024-03-01',
+    totalPosts: 120,
+    totalComments: 550,
     phone: '0934567890',
-    bio: 'Full-stack Developer, yêu thích JavaScript',
-    lastLogin: '2025-10-02 11:20'
+    bio: 'Chuyên gia về sách và văn hóa',
+    lastLogin: '2025-10-10 17:00'
   },
   {
     id: 5,
-    name: 'Hoàng Minh Em',
-    email: 'hoangminhe@email.com',
+    name: 'Hoàng Văn Hải',
+    email: 'hoangvanhai@email.com',
     avatar: 'https://i.pravatar.cc/150?img=12',
     status: 'inactive',
     role: 'user',
-    joinDate: '2023-12-18',
-    totalPosts: 7,
-    totalComments: 23,
+    joinDate: '2023-11-25',
+    totalPosts: 10,
+    totalComments: 30,
     phone: '0945678901',
-    bio: 'Newbie trong lĩnh vực lập trình',
-    lastLogin: '2025-08-15 10:00'
+    bio: 'Người dùng ít hoạt động',
+    lastLogin: '2025-05-01 12:00'
   },
   {
     id: 6,
     name: 'Đỗ Văn Phúc',
-    email: 'dovanp@email.com',
+    email: 'dovanphuc@email.com',
     avatar: 'https://i.pravatar.cc/150?img=15',
     status: 'active',
     role: 'user',
-    joinDate: '2024-05-30',
-    totalPosts: 45,
-    totalComments: 201,
+    joinDate: '2025-01-01',
+    totalPosts: 50,
+    totalComments: 200,
     phone: '0956789012',
-    bio: 'Backend Developer, chuyên Node.js và MongoDB',
-    lastLogin: '2025-10-02 08:45'
+    bio: 'Chuyên gia công nghệ',
+    lastLogin: '2025-10-12 18:30'
   }
+];
+
+// Dữ liệu giả định cho các Chuyên mục/Chủ đề (đã thêm)
+export const mockCategories = [
+  { id: 101, name: 'Công nghệ', slug: 'cong-nghe', icon: 'zap', postCount: 120 },
+  { id: 102, name: 'Sách & Văn hóa', slug: 'sach-van-hoa', icon: 'book', postCount: 85 },
+  { id: 103, name: 'Khoa học', slug: 'khoa-hoc', icon: 'atom', postCount: 50 },
+  { id: 104, name: 'Kinh tế & Tài chính', slug: 'kinh-te-tai-chinh', icon: 'trending-up', postCount: 95 },
+  { id: 105, name: 'Cuộc sống', slug: 'cuoc-song', icon: 'sun', postCount: 150 },
+  { id: 106, name: 'Lập trình', slug: 'lap-trinh', icon: 'code', postCount: 70 },
+  { id: 107, name: 'Sức khỏe', slug: 'suc-khoe', icon: 'heart', postCount: 45 },
 ];
 
 export const mockPosts = [
   {
     id: 1,
-    title: 'Hướng dẫn React Hooks từ cơ bản đến nâng cao',
-    slug: 'huong-dan-react-hooks-co-ban-den-nang-cao',
+    title: 'Hướng dẫn sử dụng Tailwind CSS cho người mới',
+    slug: 'huong-dan-su-dung-tailwind-css',
     author: 'Nguyễn Văn An',
     authorId: 1,
-    content: `
-# React Hooks - Từ cơ bản đến nâng cao
-
-React Hooks là một tính năng mạnh mẽ được giới thiệu từ React 16.8, cho phép bạn sử dụng state và các tính năng khác của React mà không cần viết class component.
-
-## 1. useState Hook
-
-\`\`\`javascript
-const [count, setCount] = useState(0);
-\`\`\`
-
-useState là hook cơ bản nhất, cho phép bạn thêm state vào function component.
-
-## 2. useEffect Hook
-
-\`\`\`javascript
-useEffect(() => {
-  document.title = \`You clicked \${count} times\`;
-}, [count]);
-\`\`\`
-
-useEffect cho phép bạn thực hiện side effects trong component.
-
-## 3. Custom Hooks
-
-Bạn có thể tạo custom hooks để tái sử dụng logic...
-    `,
-    excerpt: 'Tìm hiểu về React Hooks từ những khái niệm cơ bản nhất đến các kỹ thuật nâng cao. Bài viết chi tiết về useState, useEffect và cách tạo custom hooks.',
+    category: 'Lập trình', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `# Tailwind CSS - The Utility-First CSS Framework
+Tailwind là framework tuyệt vời. Dễ học, dễ dùng.
+## Bắt đầu
+Chỉ cần cài đặt và tận hưởng sự linh hoạt của các utility class.`,
+    excerpt: 'Tìm hiểu về Tailwind CSS, framework CSS utility-first đang thịnh hành. Bài viết hướng dẫn cơ bản cho người mới bắt đầu.',
     status: 'published',
     priority: 'high',
-    views: 1234,
-    likes: 89,
-    category: 'React',
-    tags: ['react', 'hooks', 'javascript', 'frontend'],
-    createdAt: '2025-09-28 10:30',
-    updatedAt: '2025-09-29 14:20',
-    publishedAt: '2025-09-28 15:00',
+    views: 4500,
+    likes: 120,
+    createdAt: '2025-10-10 10:00',
+    updatedAt: '2025-10-10 12:30',
+    publishedAt: '2025-10-10 12:30',
     comments: [
-      {
-        id: 1,
-        userId: 4,
-        userName: 'Phạm Thị Diệu',
-        userAvatar: 'https://i.pravatar.cc/150?img=9',
-        content: 'Bài viết rất chi tiết và dễ hiểu! Cảm ơn tác giả đã chia sẻ.',
-        createdAt: '2025-09-28 16:45',
-        likes: 5
-      },
-      {
-        id: 2,
-        userId: 6,
-        userName: 'Đỗ Văn Phúc',
-        userAvatar: 'https://i.pravatar.cc/150?img=15',
-        content: 'Phần custom hooks có thể giải thích thêm không ạ?',
-        createdAt: '2025-09-29 09:20',
-        likes: 2
-      }
+      { id: 1, userId: 2, userName: 'Trần Thị Bình', userAvatar: 'https://i.pravatar.cc/150?img=5', content: 'Bài viết rất hay, cảm ơn bạn!', createdAt: '2025-10-10 13:00', likes: 10 },
+      { id: 2, userId: 4, userName: 'Phạm Thị Duyên', userAvatar: 'https://i.pravatar.cc/150?img=8', content: 'Tôi đã chuyển sang dùng Tailwind sau khi đọc bài này.', createdAt: '2025-10-10 14:00', likes: 5 }
     ]
   },
   {
     id: 2,
-    title: 'Tailwind CSS: Styling hiện đại cho dự án web',
-    slug: 'tailwind-css-styling-hien-dai',
+    title: 'Phân tích tình hình kinh tế 6 tháng cuối năm 2025',
+    slug: 'phan-tich-kinh-te-6-thang-cuoi-nam',
     author: 'Trần Thị Bình',
     authorId: 2,
-    content: `
-# Tailwind CSS - Framework CSS tiện ích
-
-Tailwind CSS là một utility-first CSS framework giúp bạn xây dựng giao diện nhanh chóng mà không cần rời khỏi HTML.
-
-## Ưu điểm
-
-- Không cần nghĩ tên class
-- Dễ dàng responsive
-- File size nhỏ khi production
-- Customization linh hoạt
-
-## Cài đặt
-
-\`\`\`bash
-npm install -D tailwindcss
-npx tailwindcss init
-\`\`\`
-    `,
-    excerpt: 'Khám phá Tailwind CSS - một trong những CSS framework phổ biến nhất hiện nay. Hướng dẫn cài đặt và sử dụng các utility classes.',
+    category: 'Kinh tế & Tài chính', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `# Kinh tế Vĩ mô
+Các chuyên gia dự đoán thị trường sẽ ổn định hơn vào cuối năm.
+## Các chỉ số chính
+GDP, lạm phát và tỷ giá hối đoái.`,
+    excerpt: 'Dự báo và phân tích chi tiết tình hình kinh tế vĩ mô trong 6 tháng cuối năm, tập trung vào thị trường Việt Nam.',
     status: 'published',
     priority: 'medium',
-    views: 892,
-    likes: 67,
-    category: 'CSS',
-    tags: ['tailwind', 'css', 'frontend', 'styling'],
-    createdAt: '2025-09-30 08:15',
-    updatedAt: '2025-09-30 08:15',
-    publishedAt: '2025-09-30 09:00',
+    views: 9800,
+    likes: 250,
+    createdAt: '2025-10-05 08:00',
+    updatedAt: '2025-10-06 09:00',
+    publishedAt: '2025-10-06 09:00',
     comments: [
-      {
-        id: 3,
-        userId: 1,
-        userName: 'Nguyễn Văn An',
-        userAvatar: 'https://i.pravatar.cc/150?img=1',
-        content: 'Tailwind thực sự tiết kiệm thời gian! Bài viết hay!',
-        createdAt: '2025-09-30 10:30',
-        likes: 8
-      }
+      { id: 3, userId: 1, userName: 'Nguyễn Văn An', userAvatar: 'https://i.pravatar.cc/150?img=1', content: 'Rất bổ ích cho việc đầu tư.', createdAt: '2025-10-06 10:00', likes: 20 },
     ]
   },
   {
     id: 3,
-    title: 'JavaScript ES6: Arrow Functions và Destructuring',
-    slug: 'javascript-es6-arrow-functions-destructuring',
-    author: 'Lê Văn Cường',
-    authorId: 3,
-    content: `
-# JavaScript ES6 Features
-
-ES6 (ECMAScript 2015) mang đến nhiều tính năng mới giúp code JavaScript hiện đại và dễ đọc hơn.
-
-## Arrow Functions
-
-\`\`\`javascript
-const add = (a, b) => a + b;
-\`\`\`
-
-## Destructuring
-
-\`\`\`javascript
-const { name, age } = person;
-const [first, second] = array;
-\`\`\`
-    `,
-    excerpt: 'Tìm hiểu về Arrow Functions và Destructuring - hai tính năng quan trọng của ES6 giúp code JavaScript ngắn gọn và dễ đọc hơn.',
+    title: 'Những cuốn sách triết học kinh điển bạn nên đọc',
+    slug: 'sach-triet-hoc-kinh-dien',
+    author: 'Phạm Thị Duyên',
+    authorId: 4,
+    category: 'Sách & Văn hóa', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `# Triết học cơ bản
+Giới thiệu 5 cuốn sách định hình tư duy của nhân loại.
+## Danh sách đề xuất
+1. Cộng hòa (Plato)
+2. Luận về Sự Sống và Cái Chết (Schopenhauer)
+3. ...`,
+    excerpt: 'Tuyển chọn 5 cuốn sách triết học kinh điển từ cổ đại đến hiện đại, giúp mở rộng tầm nhìn và phát triển tư duy phản biện.',
     status: 'published',
-    priority: 'low',
-    views: 567,
-    likes: 34,
-    category: 'JavaScript',
-    tags: ['javascript', 'es6', 'programming'],
-    createdAt: '2025-09-25 14:00',
-    updatedAt: '2025-09-26 10:00',
-    publishedAt: '2025-09-26 11:00',
-    comments: []
+    priority: 'high',
+    views: 6200,
+    likes: 180,
+    createdAt: '2025-09-28 15:00',
+    updatedAt: '2025-09-28 16:30',
+    publishedAt: '2025-09-29 09:00',
+    comments: [
+      { id: 4, userId: 3, userName: 'Lê Văn Cường', userAvatar: 'https://i.pravatar.cc/150?img=11', content: 'Tôi đã đọc cuốn của Plato, rất thấm!', createdAt: '2025-09-29 10:30', likes: 5 },
+    ]
   },
   {
     id: 4,
-    title: 'Node.js Best Practices cho Backend Developer',
-    slug: 'nodejs-best-practices-backend',
-    author: 'Phạm Thị Diệu',
-    authorId: 4,
-    content: `
-# Node.js Best Practices
-
-Những thực hành tốt nhất khi phát triển ứng dụng Node.js.
-
-## 1. Error Handling
-## 2. Security
-## 3. Performance
-## 4. Testing
-    `,
-    excerpt: 'Tổng hợp các best practices quan trọng khi làm việc với Node.js. Từ error handling, security đến performance optimization.',
-    status: 'draft',
-    priority: 'high',
-    views: 0,
-    likes: 0,
-    category: 'Backend',
-    tags: ['nodejs', 'backend', 'best-practices'],
-    createdAt: '2025-10-01 16:30',
-    updatedAt: '2025-10-02 09:15',
-    publishedAt: null,
+    title: 'Bí quyết cân bằng giữa công việc và cuộc sống (Work-Life Balance)',
+    slug: 'bi-quyet-work-life-balance',
+    author: 'Nguyễn Văn An',
+    authorId: 1,
+    category: 'Cuộc sống', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `Cân bằng không phải là chia đều 50/50, mà là sự hài hòa.`,
+    excerpt: 'Làm thế nào để tìm được sự hài hòa giữa áp lực công việc và nhu cầu cá nhân? Áp dụng các mẹo nhỏ để cải thiện chất lượng sống.',
+    status: 'published',
+    priority: 'low',
+    views: 3100,
+    likes: 95,
+    createdAt: '2025-10-12 18:00',
+    updatedAt: '2025-10-12 18:00',
+    publishedAt: '2025-10-12 18:00', // Bài mới nhất
     comments: []
   },
   {
     id: 5,
-    title: 'MongoDB Aggregation Pipeline: Truy vấn dữ liệu nâng cao',
-    slug: 'mongodb-aggregation-pipeline',
+    title: 'Tương lai của Trí tuệ Nhân tạo (AI) trong 5 năm tới',
+    slug: 'tuong-lai-cua-tri-tue-nhan-tao',
     author: 'Đỗ Văn Phúc',
     authorId: 6,
-    content: `
-# MongoDB Aggregation Pipeline
-
-Aggregation pipeline là một framework mạnh mẽ để xử lý dữ liệu trong MongoDB.
-
-## Các stages phổ biến
-
-- $match
-- $group
-- $project
-- $sort
-- $limit
-    `,
-    excerpt: 'Khám phá Aggregation Pipeline trong MongoDB - công cụ mạnh mẽ để thực hiện các truy vấn phức tạp và xử lý dữ liệu.',
-    status: 'draft',
-    priority: 'medium',
-    views: 0,
-    likes: 0,
-    category: 'Database',
-    tags: ['mongodb', 'database', 'backend'],
-    createdAt: '2025-10-02 07:20',
-    updatedAt: '2025-10-02 08:45',
-    publishedAt: null,
-    comments: []
+    category: 'Công nghệ', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `AI sẽ thay đổi mọi ngành công nghiệp, từ y tế đến sản xuất.`,
+    excerpt: 'Phân tích xu hướng và dự đoán sự phát triển của công nghệ AI, Machine Learning và ảnh hưởng của chúng đến thị trường lao động.',
+    status: 'published',
+    priority: 'high',
+    views: 12500,
+    likes: 350,
+    createdAt: '2025-09-20 11:00',
+    updatedAt: '2025-09-20 11:00',
+    publishedAt: '2025-09-21 07:00',
+    comments: [
+      { id: 5, userId: 2, userName: 'Trần Thị Bình', userAvatar: 'https://i.pravatar.cc/150?img=5', content: 'Thật đáng sợ và thú vị!', createdAt: '2025-09-21 08:30', likes: 45 },
+    ]
   },
   {
     id: 6,
-    title: 'Git & GitHub: Làm việc nhóm hiệu quả',
-    slug: 'git-github-lam-viec-nhom',
-    author: 'Nguyễn Văn An',
-    authorId: 1,
-    content: `
-# Git & GitHub cho Team
-
-Hướng dẫn sử dụng Git và GitHub để làm việc nhóm hiệu quả.
-
-## Git Workflow
-## Branching Strategy
-## Pull Requests
-## Code Review
-    `,
-    excerpt: 'Hướng dẫn chi tiết về cách sử dụng Git và GitHub để làm việc nhóm. Từ git workflow, branching strategy đến code review.',
+    title: 'Quy tắc vàng để sống thọ và khỏe mạnh',
+    slug: 'quy-tac-song-khoe-manh',
+    author: 'Phạm Thị Duyên',
+    authorId: 4,
+    category: 'Sức khỏe', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `Tập thể dục, ăn uống cân bằng và ngủ đủ giấc.`,
+    excerpt: 'Những thói quen đơn giản nhưng cực kỳ quan trọng giúp bạn duy trì một cơ thể khỏe mạnh và tinh thần minh mẫn.',
     status: 'published',
     priority: 'medium',
-    views: 745,
-    likes: 56,
-    category: 'DevOps',
-    tags: ['git', 'github', 'version-control', 'teamwork'],
-    createdAt: '2025-09-27 11:00',
-    updatedAt: '2025-09-27 13:30',
-    publishedAt: '2025-09-27 14:00',
-    comments: [
-      {
-        id: 4,
-        userId: 4,
-        userName: 'Phạm Thị Diệu',
-        userAvatar: 'https://i.pravatar.cc/150?img=9',
-        content: 'Rất hữu ích cho newbie như mình. Thanks!',
-        createdAt: '2025-09-27 15:20',
-        likes: 12
-      },
-      {
-        id: 5,
-        userId: 6,
-        userName: 'Đỗ Văn Phúc',
-        userAvatar: 'https://i.pravatar.cc/150?img=15',
-        content: 'Có thể giải thích thêm về rebase không?',
-        createdAt: '2025-09-28 09:10',
-        likes: 3
-      },
-      {
-        id: 6,
-        userId: 1,
-        userName: 'Nguyễn Văn An',
-        userAvatar: 'https://i.pravatar.cc/150?img=1',
-        content: '@Đỗ Văn Phúc Mình sẽ viết một bài riêng về rebase nhé!',
-        createdAt: '2025-09-28 10:30',
-        likes: 5
-      }
-    ]
+    views: 2800,
+    likes: 70,
+    createdAt: '2025-10-11 06:00',
+    updatedAt: '2025-10-11 06:00',
+    publishedAt: '2025-10-11 06:00',
+    comments: []
   },
   {
     id: 7,
-    title: 'REST API Design: Thiết kế API chuẩn RESTful',
-    slug: 'rest-api-design-chuan-restful',
-    author: 'Trần Thị Bình',
-    authorId: 2,
-    content: `
-# REST API Design Best Practices
-
-Hướng dẫn thiết kế REST API theo chuẩn RESTful.
-
-## HTTP Methods
-- GET: Lấy dữ liệu
-- POST: Tạo mới
-- PUT: Cập nhật toàn bộ
-- PATCH: Cập nhật một phần
-- DELETE: Xóa
-
-## Status Codes
-- 200: Success
-- 201: Created
-- 400: Bad Request
-- 404: Not Found
-- 500: Server Error
-    `,
-    excerpt: 'Tìm hiểu cách thiết kế REST API chuẩn RESTful. HTTP methods, status codes, và best practices khi xây dựng API.',
-    status: 'published',
-    priority: 'high',
-    views: 1089,
-    likes: 92,
-    category: 'Backend',
-    tags: ['api', 'rest', 'backend', 'web-development'],
-    createdAt: '2025-09-26 09:30',
-    updatedAt: '2025-09-26 14:00',
-    publishedAt: '2025-09-26 15:00',
-    comments: [
-      {
-        id: 7,
-        userId: 6,
-        userName: 'Đỗ Văn Phúc',
-        userAvatar: 'https://i.pravatar.cc/150?img=15',
-        content: 'Bài viết rất chuyên nghiệp và đầy đủ!',
-        createdAt: '2025-09-26 16:45',
-        likes: 15
-      }
-    ]
-  },
-  {
-    id: 8,
-    title: 'Docker cho người mới bắt đầu',
-    slug: 'docker-cho-nguoi-moi-bat-dau',
-    author: 'Đỗ Văn Phúc',
-    authorId: 6,
-    content: `
-# Docker - Containerization Platform
-
-Docker giúp đóng gói ứng dụng và dependencies vào container.
-
-## Các khái niệm cơ bản
-- Image
-- Container
-- Dockerfile
-- Docker Compose
-    `,
-    excerpt: 'Hướng dẫn Docker từ cơ bản cho người mới bắt đầu. Tìm hiểu về container, image, Dockerfile và Docker Compose.',
-    status: 'draft',
+    title: 'Lập trình hàm (Functional Programming) là gì?',
+    slug: 'functional-programming-la-gi',
+    author: 'Nguyễn Văn An',
+    authorId: 1,
+    category: 'Lập trình', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `Tập trung vào hàm, tránh side effects và sử dụng tính bất biến.`,
+    excerpt: 'Giới thiệu các khái niệm cốt lõi của Lập trình Hàm, ưu điểm và cách áp dụng trong các ngôn ngữ hiện đại.',
+    status: 'draft', // Dùng cho Admin Dashboard
     priority: 'low',
     views: 0,
     likes: 0,
-    category: 'DevOps',
-    tags: ['docker', 'devops', 'container'],
-    createdAt: '2025-10-01 13:15',
-    updatedAt: '2025-10-01 17:30',
-    publishedAt: null,
+    createdAt: '2025-09-26 09:30',
+    updatedAt: '2025-09-26 14:00',
+    publishedAt: '2025-09-26 15:00',
+    comments: []
+  },
+  {
+    id: 8,
+    title: 'Thuyết tương đối của Einstein: Giải thích đơn giản',
+    slug: 'thuyet-tuong-doi-don-gian',
+    author: 'Trần Thị Bình',
+    authorId: 2,
+    category: 'Khoa học', // <--- Đã THÊM TRƯỜNG NÀY
+    content: `E = mc^2 là công thức nổi tiếng nhất, nhưng ý nghĩa thực sự của nó là gì?`,
+    excerpt: 'Bài viết giải thích một cách dễ hiểu về Thuyết Tương đối Hẹp và Rộng của Albert Einstein, thời gian và không gian.',
+    status: 'published',
+    priority: 'medium',
+    views: 7500,
+    likes: 210,
+    createdAt: '2025-09-15 10:00',
+    updatedAt: '2025-09-15 10:00',
+    publishedAt: '2025-09-15 10:00',
     comments: []
   }
 ];
-
-export const categories = [
-  'React',
-  'JavaScript', 
-  'CSS',
-  'Backend',
-  'Database',
-  'DevOps',
-  'Frontend'
-];
-
-export const postStatuses = {
-  draft: 'Bản nháp',
-  published: 'Đã xuất bản',
-  pending: 'Chờ duyệt'
-};
-
-export const userStatuses = {
-  active: 'Hoạt động',
-  inactive: 'Không hoạt động',
-  suspended: 'Tạm khóa'
-};
