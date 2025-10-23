@@ -1,0 +1,21 @@
+{
+  "development": {
+    "username": "vos",
+    "password": "vos!12345678",
+    "database": "8Express",
+    "host": "127.0.0.1",
+    "dialect": "mysql",
+    "port": 3306,
+    "timezone": "+07:00",
+    "dialectOptions": {
+      "charset": "utf8mb4",
+      "dateStrings": true,
+      "typeCast": true
+    },
+    "define": {
+      "underscored": true,
+      "freezeTableName": true,
+      "timestamps": false
+    }
+  }
+}
