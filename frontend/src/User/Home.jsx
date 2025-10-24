@@ -1,21 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockPosts, mockCategories } from './MockData';
-import { 
-  Search, Home as HomeIcon, TrendingUp, Sparkles, Book, Atom, Sun, Code, 
+import axios from 'axios';
+import {
+  Search, Home as HomeIcon, TrendingUp, Sparkles, Book, Atom, Sun, Code,
   User, Eye, MessageSquare, ThumbsUp, Zap, Heart, LogOut, BarChart3
 } from 'lucide-react';
 import './Home.css';
 import logo from '../Images/Logo.png';
-const categoryIcons = {
-  'zap': Zap,
-  'book': Book,
-  'atom': Atom,
-  'sun': Sun,
-  'code': Code
-};
 
-// Component: Post Card
+const categoryIcons = { zap: Zap, book: Book, atom: Atom, sun: Sun, code: Code };
+
 const PostCard = ({ post, onViewDetail, isFavorite, onToggleFavorite }) => (
   <div className="post-card group">
     <div className="flex items-center justify-between mb-3">
@@ -29,15 +23,15 @@ const PostCard = ({ post, onViewDetail, isFavorite, onToggleFavorite }) => (
         <span className="mx-2">•</span>
         <span>{new Date(post.publishedAt).toLocaleDateString('vi-VN')}</span>
       </div>
-      
-      <button 
+
+      <button
         onClick={(e) => { e.stopPropagation(); onToggleFavorite(post.id); }}
         className="p-2 hover:bg-gray-100 rounded-full transition"
         title={isFavorite ? "Bỏ yêu thích" : "Yêu thích"}
       >
-        <Heart 
-          size={20} 
-          className={isFavorite ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"} 
+        <Heart
+          size={20}
+          className={isFavorite ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}
         />
       </button>
     </div>
@@ -47,19 +41,16 @@ const PostCard = ({ post, onViewDetail, isFavorite, onToggleFavorite }) => (
         {post.title}
       </h3>
       <p className="text-gray-600 line-clamp-2 mb-4">{post.excerpt}</p>
-      
+
       <div className="flex items-center text-sm text-gray-500 gap-4">
         <span className="flex items-center gap-1">
-          <ThumbsUp size={16} />
-          {post.likes}
+          <ThumbsUp size={16} /> {post.likes}
         </span>
         <span className="flex items-center gap-1">
-          <Eye size={16} />
-          {post.views}
+          <Eye size={16} /> {post.views}
         </span>
         <span className="flex items-center gap-1">
-          <MessageSquare size={16} />
-          {post.comments?.length || 0}
+          <MessageSquare size={16} /> {post.comments?.length || 0}
         </span>
       </div>
     </div>
@@ -68,54 +59,50 @@ const PostCard = ({ post, onViewDetail, isFavorite, onToggleFavorite }) => (
 
 const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const navigate = useNavigate();
+  const [posts, setPosts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState('new');
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState([]);
 
-  const toggleFavorite = (postId) => {
-    setFavorites(prev => 
-      prev.includes(postId) 
-        ? prev.filter(id => id !== postId)
-        : [...prev, postId]
-    );
+  useEffect(() => {
+    axios.get('http://localhost:5000/posts')
+      .then(res => {
+        if (res.data.success) setPosts(res.data.data);
+      })
+      .catch(err => console.error("Lỗi lấy posts:", err));
+
+    axios.get('http://localhost:5000/topics')
+      .then(res => {
+        if (res.data.success) setCategories(res.data.data);
+      })
+      .catch(err => console.error("Lỗi lấy topics:", err));
+  }, []);
+
+  const toggleFavorite = id => {
+    setFavorites(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const handleViewDetail = (post) => {
-    navigate(`/post/${post.id}`, { state: { post } });
-  };
+  const handleViewDetail = post => navigate(`/post/${post.id}`, { state: { post } });
 
   const filteredPosts = useMemo(() => {
-    let posts = [...mockPosts].filter(post => post.status === 'published');
-
-    if (activeCategory) {
-      posts = posts.filter(post => post.category === activeCategory);
-    }
-
+    let list = posts.filter(p => p.status === 'published');
+    if (activeCategory) list = list.filter(p => p.category === activeCategory);
     if (searchTerm) {
-      const lowerSearch = searchTerm.toLowerCase();
-      posts = posts.filter(post =>
-        post.title.toLowerCase().includes(lowerSearch) ||
-        post.author.toLowerCase().includes(lowerSearch) ||
-        post.excerpt.toLowerCase().includes(lowerSearch)
+      const lower = searchTerm.toLowerCase();
+      list = list.filter(p =>
+        p.title.toLowerCase().includes(lower) ||
+        p.author?.toLowerCase().includes(lower) ||
+        p.excerpt?.toLowerCase().includes(lower)
       );
     }
+    if (activeTab === 'hot') return [...list].sort((a, b) => b.views - a.views);
+    if (activeTab === 'favorite') return list.filter(p => favorites.includes(p.id));
+    return [...list].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+  }, [posts, activeCategory, activeTab, searchTerm, favorites]);
 
-    if (activeTab === 'hot') {
-      return posts.sort((a, b) => b.views - a.views);
-    } else if (activeTab === 'favorite') {
-      return posts.filter(post => favorites.includes(post.id));
-    }
-
-    return posts.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-  }, [activeCategory, activeTab, searchTerm, favorites]);
-
-  const topPosts = useMemo(() => {
-    return [...mockPosts]
-      .filter(post => post.status === 'published')
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 5);
-  }, []);
+  const topPosts = useMemo(() => [...posts].sort((a, b) => b.views - a.views).slice(0, 5), [posts])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,21 +111,21 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-6">
-              <img 
+              <img
                 onClick={() => navigate('/')}
                 className="h-20 w-auto cursor-pointer"
                 src={logo}
                 alt="8Express Logo"
-              
+
               />
               <nav className="hidden md:flex space-x-4">
-                <button 
+                <button
                   onClick={() => navigate('/')}
                   className="text-indigo-600 font-semibold border-b-2 border-indigo-600"
                 >
                   Trang chủ
                 </button>
-                <button 
+                <button
                   onClick={() => isLoggedIn ? navigate('/write') : navigate('/login')}
                   className="text-gray-600 hover:text-indigo-600 transition"
                 >
@@ -232,7 +219,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                     Tất cả bài viết
                   </span>
                 </button>
-                {mockCategories.map(cat => {
+                {categories.map(cat => {
                   const Icon = categoryIcons[cat.icon] || Book;
                   return (
                     <button
@@ -280,9 +267,9 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
             <div className="space-y-4">
               {filteredPosts.length > 0 ? (
                 filteredPosts.map(post => (
-                  <PostCard 
-                    key={post.id} 
-                    post={post} 
+                  <PostCard
+                    key={post.id}
+                    post={post}
                     onViewDetail={handleViewDetail}
                     isFavorite={favorites.includes(post.id)}
                     onToggleFavorite={toggleFavorite}
@@ -291,8 +278,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               ) : (
                 <div className="text-center p-12 bg-white rounded-xl shadow-sm">
                   <p className="text-gray-500">
-                    {activeTab === 'favorite' 
-                      ? 'Bạn chưa có bài viết yêu thích nào.' 
+                    {activeTab === 'favorite'
+                      ? 'Bạn chưa có bài viết yêu thích nào.'
                       : 'Không tìm thấy bài viết nào phù hợp.'}
                   </p>
                 </div>
@@ -308,8 +295,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 <h4 className="text-lg font-bold text-center text-gray-800 border-b pb-3 mb-3">Bài viết phổ biến</h4>
                 <div className="space-y-3">
                   {topPosts.map((post, index) => (
-                    <div 
-                      key={post.id} 
+                    <div
+                      key={post.id}
                       onClick={() => handleViewDetail(post)}
                       className="flex gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition"
                     >
@@ -375,26 +362,26 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
             <div>
               <h4 className="font-bold mb-4">Liên kết nhanh</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Về chúng tôi</a></li>
-                <li><a href="#" className="hover:text-white transition">Điều khoản sử dụng</a></li>
-                <li><a href="#" className="hover:text-white transition">Chính sách bảo mật</a></li>
+                <li><button className="hover:text-white transition">Về chúng tôi</button></li>
+                <li><button className="hover:text-white transition">Điều khoản sử dụng</button></li>
+                <li><button className="hover:text-white transition">Chính sách bảo mật</button></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold mb-4">Chủ đề</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><a href="#" className="hover:text-white transition">Công nghệ</a></li>
-                <li><a href="#" className="hover:text-white transition">Lập trình</a></li>
-                <li><a href="#" className="hover:text-white transition">Khoa học</a></li>
+                <li><button className="hover:text-white transition">Công nghệ</button></li>
+                <li><button className="hover:text-white transition">Lập trình</button></li>
+                <li><button className="hover:text-white transition">Khoa học</button></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold mb-4">Nhận bản tin</h4>
               <div className="flex gap-2">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   placeholder="Email của bạn"
                   className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />

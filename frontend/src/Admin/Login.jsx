@@ -30,19 +30,22 @@ const Login = ({ onLogin }) => {
       const data = await res.json();
 
       if (data.success) {
+        localStorage.setItem("token", data.token);
         onLogin({ ...data.user, role: "user" });
         navigate("/");
       } else {
         setError(data.message || "Email hoặc mật khẩu không đúng!");
       }
     } catch (err) {
-      setError("Lỗi kết nối tới server: " + err.message);
+      console.error("Lỗi kết nối tới server:", err);
+      setError("Không thể kết nối tới server. Vui lòng thử lại sau.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Chào mừng bạn
@@ -50,12 +53,14 @@ const Login = ({ onLogin }) => {
           <p className="text-gray-600">Đăng nhập vào tài khoản của bạn</p>
         </div>
 
+        {/* Error message */}
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
             {error}
           </div>
         )}
 
+        {/* Login form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div>
@@ -63,7 +68,10 @@ const Login = ({ onLogin }) => {
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Mail
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
+              />
               <input
                 type="email"
                 name="email"
@@ -82,7 +90,10 @@ const Login = ({ onLogin }) => {
               Mật khẩu
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <Lock
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={20}
+              />
               <input
                 type={showPassword ? "text" : "password"}
                 name="password"
@@ -102,6 +113,7 @@ const Login = ({ onLogin }) => {
             </div>
           </div>
 
+          {/* Submit button */}
           <button
             type="submit"
             className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition shadow-lg"
@@ -110,6 +122,7 @@ const Login = ({ onLogin }) => {
           </button>
         </form>
 
+        {/* Register link */}
         <div className="mt-6 text-center text-sm text-gray-600">
           Chưa có tài khoản?{" "}
           <button

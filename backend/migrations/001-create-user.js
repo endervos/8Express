@@ -16,6 +16,7 @@ module.exports = {
         email: {
           type: S.STRING(100),
           allowNull: false,
+          unique: true,
         },
         password: {
           type: S.STRING(255),
@@ -33,10 +34,24 @@ module.exports = {
           type: S.DATEONLY,
           allowNull: false,
         },
+        avatar: {
+          type: S.BLOB("long"),
+          allowNull: true,
+        },
         is_banned: {
           type: S.BOOLEAN,
           allowNull: false,
           defaultValue: false,
+        },
+        createdAt: {
+          type: S.DATE,
+          defaultValue: S.literal("CURRENT_TIMESTAMP"),
+        },
+        updatedAt: {
+          type: S.DATE,
+          defaultValue: S.literal(
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+          ),
         },
       },
       {

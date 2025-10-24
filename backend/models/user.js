@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         type: DataTypes.STRING(100),
         allowNull: false,
+        unique: true,
         validate: {
           notNull: { msg: "Email là bắt buộc" },
           is: {
@@ -85,6 +86,11 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
 
+      avatar: {
+        type: DataTypes.BLOB("long"),
+        allowNull: true,
+      },
+
       is_banned: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -98,11 +104,24 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+
   User.associate = (models) => {
     User.hasMany(models.Post, { foreignKey: "user_id" });
     User.hasMany(models.Share, { foreignKey: "shared_by" });
     User.hasMany(models.Comment, { foreignKey: "user_id" });
     User.hasMany(models.PostReaction, { foreignKey: "user_id" });
+    User.belongsToMany(models.User, {
+      through: models.Follow,
+      as: "Followers",
+      foreignKey: "following_id",
+      otherKey: "follower_id",
+    });
+    User.belongsToMany(models.User, {
+      through: models.Follow,
+      as: "Following",
+      foreignKey: "follower_id",
+      otherKey: "following_id",
+    });
   };
 
   return User;

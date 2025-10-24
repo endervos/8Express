@@ -14,7 +14,7 @@ const VerifyEmail = () => {
     e.preventDefault();
 
     if (!email) {
-      setMessage("❌ Không có email để xác thực!");
+      setMessage("Không có email để xác thực!");
       return;
     }
 
@@ -37,7 +37,7 @@ const VerifyEmail = () => {
         const registerData = await registerRes.json();
 
         if (registerData.success) {
-          alert("🎉 Đăng ký thành công! Vui lòng đăng nhập.");
+          alert("Đăng ký thành công! Vui lòng đăng nhập.");
           navigate("/login");
         } else {
           setMessage(registerData.message);

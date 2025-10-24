@@ -1,4 +1,5 @@
 "use strict";
+
 module.exports = {
   async up(q, S) {
     await q.createTable(
@@ -33,12 +34,27 @@ module.exports = {
           type: S.DATEONLY,
           allowNull: false,
         },
+        avatar: {
+          type: S.BLOB("long"),
+          allowNull: true,
+        },
+        createdAt: {
+          type: S.DATE,
+          defaultValue: S.literal("CURRENT_TIMESTAMP"),
+        },
+        updatedAt: {
+          type: S.DATE,
+          defaultValue: S.literal(
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+          ),
+        },
       },
       {
         charset: "utf8mb4",
         collate: "utf8mb4_unicode_ci",
       }
     );
+
 
     await q.addConstraint("Admin", {
       fields: ["phone"],
@@ -50,7 +66,9 @@ module.exports = {
     await q.addConstraint("Admin", {
       fields: ["email"],
       type: "check",
-      where: S.literal("email REGEXP '^[^@]+@[^@]+\\\\.[a-z]{2,}(\\\\.[a-z]{2,})?$'"),
+      where: S.literal(
+        "email REGEXP '^[^@]+@[^@]+\\\\.[a-z]{2,}(\\\\.[a-z]{2,})?$'"
+      ),
       name: "chk_admin_email_format",
     });
 

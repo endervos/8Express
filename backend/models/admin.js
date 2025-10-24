@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       email: {
         type: DataTypes.STRING(100),
         allowNull: false,
+        unique: true,
         validate: {
           notNull: { msg: "Email là bắt buộc" },
           is: {
@@ -85,10 +86,15 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
+
+      avatar: {
+        type: DataTypes.BLOB("long"),
+        allowNull: true,
+      },
     },
     {
       tableName: "Admin",
-      timestamps: false,
+      timestamps: true,
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci",
     }
