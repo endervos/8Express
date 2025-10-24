@@ -9,13 +9,14 @@ CREATE TABLE `User` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     phone VARCHAR(10) NOT NULL,
     email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     gender ENUM('Nam', 'Nữ', 'Khác') NOT NULL,
     date_of_birth DATE NOT NULL,
-    city VARCHAR(100) NOT NULL,
     is_banned BOOLEAN DEFAULT FALSE,
+
     CHECK (CHAR_LENGTH(phone) = 10 AND phone REGEXP '^[0-9]{10}$'),
-    CHECK (email LIKE '%@%.com'),
+    CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
     CHECK (CHAR_LENGTH(full_name) >= 2)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -24,13 +25,13 @@ CREATE TABLE `Admin` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     phone VARCHAR(10) NOT NULL,
     email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     gender ENUM('Nam', 'Nữ', 'Khác') NOT NULL,
     date_of_birth DATE NOT NULL,
-    country VARCHAR(100) NOT NULL,
-    city VARCHAR(100) NOT NULL,
+
     CHECK (CHAR_LENGTH(phone) = 10 AND phone REGEXP '^[0-9]{10}$'),
-    CHECK (email LIKE '%@%.com'),
+    CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
     CHECK (CHAR_LENGTH(full_name) >= 2)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -44,7 +45,7 @@ CREATE TABLE `Topic` (
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Reaction (các loại cảm xúc)
+-- Bảng Reaction
 CREATE TABLE `Reaction` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,

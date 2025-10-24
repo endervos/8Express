@@ -1,27 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, MapPin } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-
-const PROVINCES_DATA = [
-  { value: '', label: 'Chọn Tỉnh/Thành phố', cities: [] },
-  { value: 'hanoi', label: 'Hà Nội', cities: ['Quận Ba Đình', 'Quận Hoàn Kiếm', 'Quận Tây Hồ', 'Quận Cầu Giấy', 'Quận Hoàng Mai'] },
-  { value: 'hcm', label: 'Hồ Chí Minh', cities: ['Quận 1', 'Quận 3', 'Quận Tân Bình', 'Quận Phú Nhuận', 'Thành phố Thủ Đức'] },
-  { value: 'danang', label: 'Đà Nẵng', cities: ['Quận Hải Châu', 'Quận Thanh Khê', 'Quận Sơn Trà', 'Quận Ngũ Hành Sơn'] },
-];
+import React, { useState, useMemo } from "react";
+import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 const Register = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    birthYear: '', 
-    birthMonth: '',
-    birthDay: '',
-    gender: '',
-    province: '',
-    city: ''
+    fullName: "",
+    email: "",
+    password: "",
+    phone: "",
+    birthYear: "",
+    birthMonth: "",
+    birthDay: "",
+    gender: "",
   });
 
   const currentYear = new Date().getFullYear();
@@ -32,38 +26,88 @@ const Register = () => {
     if (!formData.birthYear || !formData.birthMonth) return 31;
     return new Date(formData.birthYear, formData.birthMonth, 0).getDate();
   }, [formData.birthYear, formData.birthMonth]);
-  
+
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  
-  const handleSubmit = (e) => {
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = "Số điện thoại phải có đúng 10 chữ số";
+    }
+
+    if (!/^[^@]+@[^@]+\.[a-z]{2,}(\.[a-z]{2,})?$/i.test(formData.email)) {
+      newErrors.email = "Định dạng email không hợp lệ";
+    }
+
+    if (formData.fullName.trim().length < 2) {
+      newErrors.fullName = "Họ tên phải có ít nhất 2 ký tự";
+    }
+
+    if (formData.password.length < 8) {
+      newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự";
+    }
+
+    if (formData.birthYear && formData.birthMonth && formData.birthDay) {
+      const dob = dayjs(
+        `${formData.birthYear}-${formData.birthMonth}-${formData.birthDay}`
+      );
+      const age = dayjs().diff(dob, "year");
+      if (age < 16) newErrors.birthDate = "Người dùng phải đủ 16 tuổi trở lên";
+    } else {
+      newErrors.birthDate = "Vui lòng chọn đầy đủ ngày sinh";
+    }
+
+    if (!formData.gender) newErrors.gender = "Vui lòng chọn giới tính";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Đăng ký thành công! Vui lòng đăng nhập.');
-    navigate('/login');
+    if (!validateForm()) return;
+    try {
+      const res = await fetch("http://localhost:5000/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Đã gửi mã xác thực tới email. Vui lòng kiểm tra hộp thư!");
+        navigate("/verify-email", { state: { formData } });
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert("Không thể gửi mã xác thực: " + err.message);
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
-  const handleProvinceChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value, city: '' }));
-  };
-
-  const currentCities = PROVINCES_DATA.find(p => p.value === formData.province)?.cities || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Tạo tài khoản mới</h1>
-          <p className="text-gray-600">Tham gia cộng đồng 8Express ngay hôm nay!</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Tạo tài khoản mới
+          </h1>
+          <p className="text-gray-600">
+            Tham gia cộng đồng 8Express ngay hôm nay!
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Họ tên */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Họ tên</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Họ tên
+            </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -72,14 +116,20 @@ const Register = () => {
                 value={formData.fullName}
                 onChange={handleChange}
                 placeholder="Nguyễn Văn A"
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                required
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none ${errors.fullName ? "border-red-500" : "border-gray-300"
+                  }`}
               />
             </div>
+            {errors.fullName && (
+              <p className="text-sm text-red-500 mt-1">{errors.fullName}</p>
+            )}
           </div>
 
+          {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email
+            </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
@@ -88,125 +138,125 @@ const Register = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="your.email@example.com"
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                required
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none ${errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
               />
             </div>
+            {errors.email && (
+              <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+            )}
           </div>
-          
+
+          {/* Số điện thoại */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Ngày sinh</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Số điện thoại
+            </label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="0123456789"
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none ${errors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
+              />
+            </div>
+            {errors.phone && (
+              <p className="text-sm text-red-500 mt-1">{errors.phone}</p>
+            )}
+          </div>
+
+          {/* Ngày sinh */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ngày sinh
+            </label>
             <div className="flex gap-2">
               <select
                 name="birthYear"
                 value={formData.birthYear}
                 onChange={handleChange}
                 className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                required
               >
-                <option value="" disabled>Năm</option>
-                {years.map(y => (
-                  <option key={y} value={y}>{y}</option>
+                <option value="">Năm</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
-              
               <select
                 name="birthMonth"
                 value={formData.birthMonth}
                 onChange={handleChange}
-                disabled={!formData.birthYear}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none disabled:bg-gray-50"
-                required
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
               >
-                <option value="" disabled>Tháng</option>
-                {months.map(m => (
-                  <option key={m} value={m < 10 ? `0${m}` : m}>{m}</option>
+                <option value="">Tháng</option>
+                {months.map((m) => (
+                  <option key={m} value={m < 10 ? `0${m}` : m}>
+                    {m}
+                  </option>
                 ))}
               </select>
-              
               <select
                 name="birthDay"
                 value={formData.birthDay}
                 onChange={handleChange}
-                disabled={!formData.birthYear || !formData.birthMonth}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none disabled:bg-gray-50"
-                required
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
               >
-                <option value="" disabled>Ngày</option>
-                {days.map(d => (
-                  <option key={d} value={d < 10 ? `0${d}` : d}>{d}</option>
+                <option value="">Ngày</option>
+                {days.map((d) => (
+                  <option key={d} value={d < 10 ? `0${d}` : d}>
+                    {d}
+                  </option>
                 ))}
               </select>
             </div>
+            {errors.birthDate && (
+              <p className="text-sm text-red-500 mt-1">{errors.birthDate}</p>
+            )}
           </div>
 
+          {/* Giới tính */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Giới tính</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Giới tính
+            </label>
             <select
               name="gender"
               value={formData.gender}
               onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-              required
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none ${errors.gender ? "border-red-500" : "border-gray-300"
+                }`}
             >
-              <option value="" disabled>Chọn giới tính</option>
-              <option value="male">Nam</option>
-              <option value="female">Nữ</option>
-              <option value="other">Khác</option>
+              <option value="">Chọn giới tính</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+              <option value="Khác">Khác</option>
             </select>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Tỉnh/Thành phố</label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <select
-                  name="province"
-                  value={formData.province}
-                  onChange={handleProvinceChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                  required
-                >
-                  {PROVINCES_DATA.map(p => (
-                    <option key={p.value} value={p.value} disabled={p.value === ''}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quận/Huyện</label>
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                disabled={!formData.province}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none disabled:bg-gray-50"
-                required
-              >
-                <option value="" disabled>Chọn Quận/Huyện</option>
-                {currentCities.map((city, index) => (
-                  <option key={index} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
+            {errors.gender && (
+              <p className="text-sm text-red-500 mt-1">{errors.gender}</p>
+            )}
           </div>
 
+          {/* Mật khẩu */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Mật khẩu</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Mật khẩu
+            </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
-                required
+                className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none ${errors.password ? "border-red-500" : "border-gray-300"
+                  }`}
               />
               <button
                 type="button"
@@ -216,6 +266,9 @@ const Register = () => {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+            )}
           </div>
 
           <button
@@ -227,9 +280,9 @@ const Register = () => {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          Đã có tài khoản?{' '}
+          Đã có tài khoản?{" "}
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate("/login")}
             className="text-purple-600 hover:text-purple-700 font-medium"
           >
             Đăng nhập
