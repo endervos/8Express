@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   User, Mail, Lock, Calendar, Edit2, Save, X,
-  Camera, FileText, Heart, Eye, MessageSquare, Settings
+  Camera, FileText, MessageSquare, Settings, Phone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -16,6 +16,8 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
   const [loading, setLoading] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showList, setShowList] = useState(null);
+  const [listData, setListData] = useState([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -37,13 +39,14 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
             id: u.id,
             name: u.full_name,
             email: u.email,
+            phone: u.phone || "",
             avatar: u.avatar
               ? `data:image/jpeg;base64,${u.avatar}`
               : "https://i.pravatar.cc/150",
             gender: u.gender,
             birthDate: u.date_of_birth,
-            joinDate: u.created_at
-              ? new Date(u.created_at).toLocaleDateString("vi-VN")
+            joinDate: u.createdAt
+              ? new Date(u.createdAt).toLocaleDateString("vi-VN")
               : "Không rõ",
             followers: u.Followers?.length || 0,
             following: u.Following?.length || 0,
@@ -60,7 +63,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
     const fetchUserPosts = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/posts");
+        const res = await axios.get("http://localhost:5000/posts?status=all");
         if (res.data.success) {
           const filtered = res.data.data.filter(
             (p) => p.author === userInfo?.full_name
@@ -99,10 +102,10 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
         `http://localhost:5000/profile/${profileData.id}`,
         {
           full_name: profileData.name,
-          email: profileData.email,
-          password: newPassword || undefined,
+          phone: profileData.phone,
           gender: profileData.gender,
-          date_of_birth: profileData.birthDate
+          date_of_birth: profileData.birthDate,
+          password: newPassword || undefined,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -112,7 +115,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
         setIsEditing(false);
         onUpdateUser({
           name: profileData.name,
-          email: profileData.email
+          email: profileData.email,
         });
       } else {
         alert('Không thể cập nhật thông tin.');
@@ -146,6 +149,18 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
       </div>
     );
   }
+
+  const fetchFollowList = async (type) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/follow/${type}/${profileData.id}`);
+      if (res.data.success) {
+        setListData(res.data.data);
+        setShowList(type);
+      }
+    } catch (err) {
+      console.error(`Lỗi lấy danh sách ${type}:`, err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -248,16 +263,60 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                 <p className="text-2xl font-bold text-gray-900">{userPosts.length}</p>
                 <p className="text-sm text-gray-600">Bài viết</p>
               </div>
-              <div className="text-center">
+              <div
+                onClick={() => fetchFollowList('followers')}
+                className="text-center cursor-pointer hover:text-indigo-600 transition"
+              >
                 <p className="text-2xl font-bold text-gray-900">{profileData.followers || 0}</p>
                 <p className="text-sm text-gray-600">Người theo dõi</p>
               </div>
-              <div className="text-center">
+              <div
+                onClick={() => fetchFollowList('following')}
+                className="text-center cursor-pointer hover:text-indigo-600 transition"
+              >
                 <p className="text-2xl font-bold text-gray-900">{profileData.following || 0}</p>
                 <p className="text-sm text-gray-600">Đang theo dõi</p>
               </div>
             </div>
           </div>
+
+          {showList && (
+            <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-xl w-96 max-h-[70vh] overflow-y-auto">
+                <div className="flex justify-between items-center px-4 py-3 border-b">
+                  <h2 className="text-lg font-bold text-gray-800">
+                    {showList === 'followers' ? 'Người theo dõi' : 'Đang theo dõi'}
+                  </h2>
+                  <button
+                    onClick={() => setShowList(null)}
+                    className="text-gray-500 hover:text-gray-800"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {listData.length === 0 ? (
+                  <p className="p-4 text-center text-gray-500">Chưa có dữ liệu</p>
+                ) : (
+                  <ul className="divide-y divide-gray-100">
+                    {listData.map((user) => (
+                      <li key={user.id} className="flex items-center gap-3 p-4">
+                        <img
+                          src={user.avatar ? `data:image/jpeg;base64,${user.avatar}` : "https://i.pravatar.cc/50"}
+                          alt={user.full_name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{user.full_name}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -289,74 +348,159 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
         {/* Content */}
         {activeTab === 'posts' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userPosts.map(post => (
-              <div
-                key={post.id}
-                onClick={() => navigate(`/post/${post.id}`, { state: { post } })}
-                className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer group"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={post.image || 'https://picsum.photos/400/200'}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  />
-                  <div className="absolute top-3 left-3">
-                    <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                      {post.category}
-                    </span>
+            {userPosts.map(post => {
+              const hasImage = post.image && post.image.startsWith("data:image");
+              const hasVideo = post.video && post.video.startsWith("data:video");
+              const hasAudio = post.audio && post.audio.startsWith("data:audio");
+
+              return (
+                <div
+                  key={post.id}
+                  onClick={() => navigate(`/post/${post.id}`, { state: { post } })}
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer group"
+                >
+                  {hasImage ? (
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                          {post.category}
+                        </span>
+                      </div>
+                    </div>
+                  ) : hasVideo ? (
+                    <div className="relative h-48 overflow-hidden bg-black">
+                      <video
+                        src={post.video}
+                        controls
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                          {post.category}
+                        </span>
+                      </div>
+                    </div>
+                  ) : hasAudio ? (
+                    <div className="p-4 bg-gray-50 border-b border-gray-100">
+                      <audio controls className="w-full" src={post.audio} />
+                    </div>
+                  ) : null}
+
+                  {/* Nội dung */}
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition">
+                      {post.title}
+                    </h3>
+
+                    {post.excerpt && (
+                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <span>{post.author}</span>
+                      <span>
+                        {new Date(post.publishedAt).toLocaleString("vi-VN", {
+                          year: "numeric",
+                          month: "2-digit",
+                          day: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                          timeZone: "Asia/Ho_Chi_Minh",
+                        })}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 pt-3 border-t border-gray-100">
+                      {post.reactions && post.reactions.length > 0 ? (
+                        post.reactions.map((r, idx) => (
+                          <span key={idx}>
+                            {r.icon} {r.count || 0}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-400">Chưa có cảm xúc</span>
+                      )}
+                      <span className="ml-3 flex items-center gap-1">
+                        <MessageSquare size={14} />
+                        {post.comments || 0}
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{post.excerpt}</p>
-
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                    <span>{post.author}</span>
-                    <span>{new Date(post.publishedAt).toLocaleDateString()}</span>
-                  </div>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
-                    <span className="flex items-center gap-1">
-                      <Eye size={14} />
-                      {post.views}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Heart size={14} />
-                      {post.likes}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageSquare size={14} />
-                      0
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-md p-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Thông tin cá nhân</h3>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              Thông tin cá nhân
+            </h3>
 
             <div className="space-y-6">
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <Mail size={16} />
-                  Email
+                  <User size={16} />
+                  Họ và tên
                 </label>
                 {isEditing ? (
                   <input
-                    type="email"
-                    name="email"
-                    value={profileData.email}
+                    type="text"
+                    name="name"
+                    value={profileData.name}
                     onChange={handleChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 ) : (
-                  <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.email}</p>
+                  <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.name}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Phone size={16} />
+                  Số điện thoại
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="phone"
+                    value={profileData.phone}
+                    onChange={handleChange}
+                    maxLength={10}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.phone}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <User size={16} />
+                  Giới tính
+                </label>
+                {isEditing ? (
+                  <select
+                    name="gender"
+                    value={profileData.gender}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  >
+                    <option value="Nam">Nam</option>
+                    <option value="Nữ">Nữ</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                ) : (
+                  <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.gender}</p>
                 )}
               </div>
 
@@ -367,7 +511,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                 </label>
                 {isEditing ? (
                   <input
-                    type="text"
+                    type="date"
                     name="birthDate"
                     value={profileData.birthDate}
                     onChange={handleChange}
@@ -412,7 +556,17 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
-                  <User size={16} />
+                  <Mail size={16} />
+                  Email
+                </label>
+                <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">
+                  {profileData.email}
+                </p>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                  <Calendar size={16} />
                   Ngày tham gia
                 </label>
                 <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">

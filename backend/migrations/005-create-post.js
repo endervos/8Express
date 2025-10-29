@@ -16,9 +16,12 @@ module.exports = {
       love_count: { type: S.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
       sad_count: { type: S.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
       wow_count: { type: S.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
-      care_count: { type: S.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
       angry_count: { type: S.INTEGER.UNSIGNED, allowNull: false, defaultValue: 0 },
-      is_disabled: { type: S.BOOLEAN, allowNull: false, defaultValue: false },
+      status: {
+        type: S.ENUM("Pending", "Approved", "Hidden", "Banned"),
+        allowNull: false,
+        defaultValue: "Pending"
+      },
       created_at: { type: S.DATE, allowNull: false, defaultValue: S.literal("CURRENT_TIMESTAMP") },
       updated_at: { type: S.DATE, allowNull: true, defaultValue: S.literal("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP") }
     }, { charset: "utf8mb4", collate: "utf8mb4_unicode_ci" });
@@ -39,7 +42,7 @@ module.exports = {
 
     await q.addConstraint("Post", { fields: ["title"], type: "check", where: S.literal("title <> ''"), name: "chk_post_title_non_empty" });
     await q.addConstraint("Post", {
-      fields: ["body","image","audio","video"],
+      fields: ["body", "image", "audio", "video"],
       type: "check",
       where: S.literal("(body IS NOT NULL OR image IS NOT NULL OR audio IS NOT NULL OR video IS NOT NULL)"),
       name: "chk_post_has_body_or_media"

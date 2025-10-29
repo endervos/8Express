@@ -3,59 +3,70 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, Home as HomeIcon, TrendingUp, Sparkles, Book, Atom, Sun, Code,
-  User, Eye, MessageSquare, ThumbsUp, Zap, Heart, LogOut, BarChart3
+  User, MessageSquare, Zap, Heart, LogOut, BarChart3
 } from 'lucide-react';
 import './Home.css';
 import logo from '../Images/Logo.png';
 
 const categoryIcons = { zap: Zap, book: Book, atom: Atom, sun: Sun, code: Code };
 
-const PostCard = ({ post, onViewDetail, isFavorite, onToggleFavorite }) => (
-  <div className="post-card group">
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center text-sm text-gray-500">
-        <User size={16} className="mr-1" />
-        <span className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer">
-          {post.author}
-        </span>
-        <span className="mx-2">•</span>
-        <span>{post.category}</span>
-        <span className="mx-2">•</span>
-        <span>{new Date(post.publishedAt).toLocaleDateString('vi-VN')}</span>
+const PostCard = ({ post, onViewDetail }) => {
+  const reactions = post.reactions || [];
+
+  return (
+    <div className="post-card group">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center text-sm text-gray-500">
+          <User size={16} className="mr-1" />
+          <span className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer">
+            {post.author}
+          </span>
+          <span className="mx-2">•</span>
+          <span>{post.category}</span>
+          <span className="mx-2">•</span>
+          <span>
+            {new Date(post.publishedAt).toLocaleString("vi-VN", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+              hour12: false,
+              timeZone: "Asia/Ho_Chi_Minh",
+            })}
+          </span>
+        </div>
       </div>
 
-      <button
-        onClick={(e) => { e.stopPropagation(); onToggleFavorite(post.id); }}
-        className="p-2 hover:bg-gray-100 rounded-full transition"
-        title={isFavorite ? "Bỏ yêu thích" : "Yêu thích"}
-      >
-        <Heart
-          size={20}
-          className={isFavorite ? "fill-red-500 text-red-500" : "text-gray-400 hover:text-red-500"}
-        />
-      </button>
-    </div>
+      <div onClick={() => onViewDetail(post)} className="cursor-pointer">
+        <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition">
+          {post.title}
+        </h3>
+        <p className="text-gray-600 line-clamp-2 mb-4">{post.excerpt}</p>
 
-    <div onClick={() => onViewDetail(post)} className="cursor-pointer">
-      <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition">
-        {post.title}
-      </h3>
-      <p className="text-gray-600 line-clamp-2 mb-4">{post.excerpt}</p>
+        <div className="flex items-center text-sm text-gray-500 gap-4">
+          {/* Hiển thị toàn bộ cảm xúc */}
+          <div className="flex flex-wrap items-center gap-2">
+            {reactions
+              .filter(r => r.count > 0)
+              .map((r, i) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span className="text-lg">{r.icon}</span>
+                  <span>{r.count}</span>
+                </span>
+              ))}
+          </div>
 
-      <div className="flex items-center text-sm text-gray-500 gap-4">
-        <span className="flex items-center gap-1">
-          <ThumbsUp size={16} /> {post.likes}
-        </span>
-        <span className="flex items-center gap-1">
-          <Eye size={16} /> {post.views}
-        </span>
-        <span className="flex items-center gap-1">
-          <MessageSquare size={16} /> {post.comments?.length || 0}
-        </span>
+          {/* Bình luận */}
+          <span className="flex items-center gap-1">
+            <MessageSquare size={16} /> {post.comments || 0}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const navigate = useNavigate();
@@ -65,9 +76,10 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const [topAuthors, setTopAuthors] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/posts')
+    axios.get('http://localhost:5000/posts?status=Approved')
       .then(res => {
         if (res.data.success) setPosts(res.data.data);
       })
@@ -78,6 +90,12 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
         if (res.data.success) setCategories(res.data.data);
       })
       .catch(err => console.error("Lỗi lấy topics:", err));
+
+    axios.get('http://localhost:5000/users/top-authors')
+      .then(res => {
+        if (res.data.success) setTopAuthors(res.data.data);
+      })
+      .catch(err => console.error("Lỗi lấy top authors:", err));
   }, []);
 
   const toggleFavorite = id => {
@@ -87,7 +105,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const handleViewDetail = post => navigate(`/post/${post.id}`, { state: { post } });
 
   const filteredPosts = useMemo(() => {
-    let list = posts.filter(p => p.status === 'published');
+    let list = posts.filter(p => p.status === 'Approved');
+
     if (activeCategory) list = list.filter(p => p.category === activeCategory);
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
@@ -97,12 +116,16 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
         p.excerpt?.toLowerCase().includes(lower)
       );
     }
+
     if (activeTab === 'hot') return [...list].sort((a, b) => b.views - a.views);
     if (activeTab === 'favorite') return list.filter(p => favorites.includes(p.id));
     return [...list].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   }, [posts, activeCategory, activeTab, searchTerm, favorites]);
 
-  const topPosts = useMemo(() => [...posts].sort((a, b) => b.views - a.views).slice(0, 5), [posts])
+  const topPosts = useMemo(() => [...posts]
+    .filter(p => p.status === 'Approved')
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 5), [posts]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -303,19 +326,29 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                       <span className="flex-shrink-0 w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm">
                         {index + 1}
                       </span>
+
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 text-sm line-clamp-2 mb-1">
                           {post.title}
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
+
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          {/* Hiển thị tất cả cảm xúc */}
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {post.reactions &&
+                              post.reactions
+                                .filter(r => r.count > 0)
+                                .map((r, i) => (
+                                  <span key={i} className="flex items-center gap-0.5">
+                                    <span>{r.icon}</span>
+                                    <span>{r.count}</span>
+                                  </span>
+                                ))}
+                          </div>
+                          {/* Bình luận */}
                           <span className="flex items-center gap-1">
-                            <Eye size={12} />
-                            {post.views}
-                          </span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <ThumbsUp size={12} />
-                            {post.likes}
+                            <MessageSquare size={12} />
+                            {post.comments || 0}
                           </span>
                         </div>
                       </div>
@@ -328,19 +361,26 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               <div>
                 <h4 className="text-lg font-bold text-gray-800 border-b pb-3 mb-3">Tác giả nổi bật</h4>
                 <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition">
-                      <img
-                        src={`https://i.pravatar.cc/150?img=${i + 10}`}
-                        alt={`User ${i}`}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-800">Tác giả {i}</p>
-                        <p className="text-sm text-gray-500">@user{i}</p>
+                  {topAuthors.length > 0 ? (
+                    topAuthors.map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                      >
+                        <img
+                          src={a.avatar || '/default-avatar.png'}
+                          alt={a.name}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-800">{a.name}</p>
+                          <p className="text-sm text-gray-500">{a.postCount} bài viết</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm text-center py-3">Chưa có dữ liệu tác giả.</p>
+                  )}
                 </div>
               </div>
             </div>

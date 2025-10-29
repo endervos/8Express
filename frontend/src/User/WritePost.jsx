@@ -1,61 +1,106 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Image, Eye, Save, Send, Tag, BookOpen } from 'lucide-react';
-import { mockCategories } from './MockData';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Image, Eye, Send, BookOpen, Video, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const WritePost = ({ isLoggedIn, userInfo }) => {
   const navigate = useNavigate();
-  
+
   const [postData, setPostData] = useState({
     title: '',
-    category: '',
+    topic: '',
     content: '',
-    excerpt: '',
-    tags: '',
-    coverImage: null
+    image: null,
+    audio: null,
+    video: null,
   });
 
+  const [topics, setTopics] = useState([]);
   const [activeTab, setActiveTab] = useState('write');
 
-  // Nếu chưa đăng nhập, chuyển về login
-  if (!isLoggedIn) {
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+
+    const fetchTopics = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/topics');
+        const data = await res.json();
+        if (data.success) {
+          setTopics(data.data);
+        } else {
+          console.warn('Không lấy được danh sách topic:', data.message);
+        }
+      } catch (err) {
+        console.error('Lỗi tải topic:', err);
+      }
+    };
+
+    fetchTopics();
+  }, [isLoggedIn, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setPostData(prev => ({ ...prev, [name]: value }));
+    setPostData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleFileUpload = (e, field) => {
     const file = e.target.files[0];
     if (file) {
+      const MAX_MB = 20;
+      if (file.size > MAX_MB * 1024 * 1024) {
+        alert(`File quá lớn! Giới hạn tối đa là ${MAX_MB}MB.`);
+        e.target.value = "";
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPostData(prev => ({ ...prev, coverImage: reader.result }));
+        setPostData((prev) => ({ ...prev, [field]: reader.result }));
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSaveDraft = () => {
-    console.log('Lưu nháp:', postData);
-    alert('Đã lưu bài viết vào nháp!');
-  };
-
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
-    
-    if (!postData.title || !postData.category || !postData.content) {
-      alert('Vui lòng điền đầy đủ thông tin bài viết!');
+    if (!postData.title || !postData.topic || !postData.content) {
+      alert('Vui lòng điền đủ thông tin!');
       return;
     }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('http://localhost:5000/posts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          token,
+        },
+        body: JSON.stringify({
+          title: postData.title,
+          topic: postData.topic,
+          content: postData.content,
+          image: postData.image,
+          video: postData.video,
+          audio: postData.audio,
+        }),
+      });
 
-    console.log('Đăng bài:', postData);
-    alert('Bài viết của bạn đã được gửi và đang chờ phê duyệt!');
-    navigate('/');
+      const data = await res.json();
+      if (data.success) {
+        alert('Đăng bài thành công!');
+        navigate('/');
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error('Lỗi đăng bài:', err);
+      alert('Không thể gửi bài viết.');
+    }
   };
+
+  if (!isLoggedIn) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,13 +120,6 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
 
             <div className="flex items-center gap-3">
               <button
-                onClick={handleSaveDraft}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
-              >
-                <Save size={18} />
-                Lưu nháp
-              </button>
-              <button
                 onClick={handlePublish}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
@@ -100,22 +138,20 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab('write')}
-              className={`flex-1 px-6 py-4 font-medium transition ${
-                activeTab === 'write'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`flex-1 px-6 py-4 font-medium transition ${activeTab === 'write'
+                ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
             >
               <BookOpen size={18} className="inline mr-2 -mt-0.5" />
               Viết bài
             </button>
             <button
               onClick={() => setActiveTab('preview')}
-              className={`flex-1 px-6 py-4 font-medium transition ${
-                activeTab === 'preview'
-                  ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`flex-1 px-6 py-4 font-medium transition ${activeTab === 'preview'
+                ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                : 'text-gray-600 hover:bg-gray-50'
+                }`}
             >
               <Eye size={18} className="inline mr-2 -mt-0.5" />
               Xem trước
@@ -125,6 +161,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
           {/* Write Tab */}
           {activeTab === 'write' && (
             <form className="p-8 space-y-6">
+              {/* Tiêu đề */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tiêu đề bài viết <span className="text-red-500">*</span>
@@ -140,63 +177,103 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
                 />
               </div>
 
+              {/* Chủ đề */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Chủ đề <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="category"
-                  value={postData.category}
+                  name="topic"
+                  value={postData.topic}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                   required
                 >
                   <option value="">Chọn chủ đề</option>
-                  {mockCategories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  {topics.map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ảnh bìa (Tùy chọn)
-                </label>
-                <div className="flex items-center gap-4">
+              {/* Upload Media */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Image */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ảnh (Tùy chọn)
+                  </label>
                   <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                     <Image size={18} className="text-gray-600" />
                     <span className="text-gray-700">Chọn ảnh</span>
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={handleImageUpload}
+                      onChange={(e) => handleFileUpload(e, 'image')}
                       className="hidden"
                     />
                   </label>
-                  {postData.coverImage && (
-                    <img 
-                      src={postData.coverImage} 
-                      alt="Preview" 
-                      className="h-20 w-auto rounded-lg border border-gray-200"
+                  {postData.image && (
+                    <img
+                      src={postData.image}
+                      alt="Ảnh"
+                      className="mt-2 h-20 w-auto rounded-lg border border-gray-200"
+                    />
+                  )}
+                </div>
+
+                {/* Video */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Video (Tùy chọn)
+                  </label>
+                  <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                    <Video size={18} className="text-gray-600" />
+                    <span className="text-gray-700">Chọn video</span>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => handleFileUpload(e, 'video')}
+                      className="hidden"
+                    />
+                  </label>
+                  {postData.video && (
+                    <video
+                      src={postData.video}
+                      controls
+                      className="mt-2 h-20 rounded-lg border border-gray-200"
+                    />
+                  )}
+                </div>
+
+                {/* Audio */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Âm thanh (Tùy chọn)
+                  </label>
+                  <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                    <Music size={18} className="text-gray-600" />
+                    <span className="text-gray-700">Chọn file audio</span>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleFileUpload(e, 'audio')}
+                      className="hidden"
+                    />
+                  </label>
+                  {postData.audio && (
+                    <audio
+                      src={postData.audio}
+                      controls
+                      className="mt-2 w-full rounded-lg border border-gray-200"
                     />
                   )}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tóm tắt ngắn
-                </label>
-                <textarea
-                  name="excerpt"
-                  value={postData.excerpt}
-                  onChange={handleChange}
-                  placeholder="Viết vài dòng giới thiệu ngắn gọn..."
-                  rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                />
-              </div>
-
+              {/* Nội dung */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Nội dung bài viết <span className="text-red-500">*</span>
@@ -209,21 +286,6 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
                   rows="15"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono text-sm"
                   required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Tag size={16} className="inline mr-1 -mt-0.5" />
-                  Tags (Ngăn cách bằng dấu phẩy)
-                </label>
-                <input
-                  type="text"
-                  name="tags"
-                  value={postData.tags}
-                  onChange={handleChange}
-                  placeholder="VD: react, javascript, web development"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               </div>
 
@@ -240,65 +302,44 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
             <div className="p-8">
               {postData.title || postData.content ? (
                 <article className="prose max-w-none">
-                  {postData.coverImage && (
-                    <img 
-                      src={postData.coverImage} 
-                      alt="Cover" 
-                      className="w-full h-64 object-cover rounded-xl mb-6"
-                    />
-                  )}
-
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">
                     {postData.title || 'Tiêu đề bài viết'}
                   </h1>
-
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-6 pb-6 border-b">
-                    <div className="flex items-center gap-2">
-                      <img 
-                        src={`https://i.pravatar.cc/150?u=${userInfo?.email}`}
-                        alt={userInfo?.name}
-                        className="w-10 h-10 rounded-full"
+                  {postData.topic && (
+                    <p className="text-indigo-600 font-medium mb-2">
+                      Chủ đề: {postData.topic}
+                    </p>
+                  )}
+                  {postData.image && (
+                    <div className="my-4 flex justify-center">
+                      <img
+                        src={postData.image}
+                        alt="Ảnh xem trước"
+                        className="rounded-lg shadow-md max-h-96 object-contain"
                       />
-                      <div>
-                        <p className="font-medium text-gray-900">{userInfo?.name}</p>
-                        <p className="text-xs text-gray-500">{new Date().toLocaleDateString('vi-VN')}</p>
-                      </div>
-                    </div>
-                    {postData.category && (
-                      <>
-                        <span>•</span>
-                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
-                          {postData.category}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {postData.excerpt && (
-                    <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 mb-6 rounded">
-                      <p className="text-gray-700 italic">{postData.excerpt}</p>
                     </div>
                   )}
-
-                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mb-6">
+                  {postData.video && (
+                    <div className="my-4 flex justify-center">
+                      <video
+                        src={postData.video}
+                        controls
+                        className="rounded-lg shadow-md max-h-96 w-full md:w-3/4"
+                      />
+                    </div>
+                  )}
+                  {postData.audio && (
+                    <div className="my-4 flex justify-center">
+                      <audio
+                        src={postData.audio}
+                        controls
+                        className="w-full md:w-3/4 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  )}
+                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mt-6">
                     {postData.content || 'Nội dung bài viết sẽ hiển thị ở đây...'}
                   </div>
-
-                  {postData.tags && (
-                    <div className="flex items-center gap-2 pt-6 border-t">
-                      <Tag size={16} className="text-gray-500" />
-                      <div className="flex flex-wrap gap-2">
-                        {postData.tags.split(',').map((tag, index) => (
-                          <span 
-                            key={index} 
-                            className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                          >
-                            #{tag.trim()}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </article>
               ) : (
                 <div className="text-center py-12">

@@ -1,11 +1,14 @@
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
+
 module.exports = {
   async up(queryInterface, Sequelize) {
     // Ảnh mẫu
-    const avatar1 = Buffer.from("FFD8FFE000104A4649460001", "hex");
-    const avatar2 = Buffer.from("FFD8FFE000104A4649460002", "hex");
-    const avatar3 = Buffer.from("FFD8FFE000104A4649460003", "hex");
+    const avatar1 = fs.readFileSync(path.join(__dirname, "images/avatar1.jpeg"));
+    const avatar2 = fs.readFileSync(path.join(__dirname, "images/avatar2.jpg"));
+    const avatar3 = fs.readFileSync(path.join(__dirname, "images/avatar3.jpg"));
 
     // ======== Admin ========
     await queryInterface.bulkInsert("Admin", [
@@ -20,16 +23,6 @@ module.exports = {
         avatar: avatar1,
       },
       {
-        phone: "0912345677",
-        email: "n22dcpt025@student.ptithcm.edu.vn",
-        password:
-          "$2a$12$3fM5IZXMlZcS/jp6v2zt5OZaSVmNjpJeXp/2yDKrhh984/JhyY/cS",
-        full_name: "Tô Duy Hào",
-        gender: "Nam",
-        date_of_birth: "2004-02-02",
-        avatar: avatar2,
-      },
-      {
         phone: "0912345671",
         email: "n22dcpt097@student.ptithcm.edu.vn",
         password:
@@ -37,6 +30,16 @@ module.exports = {
         full_name: "Huỳnh Thanh Trà",
         gender: "Nữ",
         date_of_birth: "2004-03-03",
+        avatar: avatar2,
+      },
+      {
+        phone: "0912345677",
+        email: "n22dcpt025@student.ptithcm.edu.vn",
+        password:
+          "$2a$12$3fM5IZXMlZcS/jp6v2zt5OZaSVmNjpJeXp/2yDKrhh984/JhyY/cS",
+        full_name: "Tô Duy Hào",
+        gender: "Nam",
+        date_of_birth: "2004-02-02",
         avatar: avatar3,
       },
     ]);
@@ -99,16 +102,19 @@ module.exports = {
 
     // ======== Reaction ========
     await queryInterface.bulkInsert("Reaction", [
-      { name: "Like",  icon: Buffer.from("FFD8FFE000104A4649460001", "hex") },
-      { name: "Love",  icon: Buffer.from("FFD8FFE000104A4649460002", "hex") },
-      { name: "Haha",  icon: Buffer.from("FFD8FFE000104A4649460003", "hex") },
-      { name: "Sad",   icon: Buffer.from("FFD8FFE000104A4649460004", "hex") },
-      { name: "Wow",   icon: Buffer.from("FFD8FFE000104A4649460005", "hex") },
-      { name: "Care",  icon: Buffer.from("FFD8FFE000104A4649460006", "hex") },
-      { name: "Angry", icon: Buffer.from("FFD8FFE000104A4649460007", "hex") },
+      { name: "Like", icon: "👍" },
+      { name: "Love", icon: "❤️" },
+      { name: "Haha", icon: "😆" },
+      { name: "Sad", icon: "😢" },
+      { name: "Wow", icon: "😮" },
+      { name: "Angry", icon: "😡" },
     ]);
 
     // ======== Post ========
+    const post1 = fs.readFileSync(path.join(__dirname, "images/post1.jpg"));
+    const post2 = fs.readFileSync(path.join(__dirname, "images/post2.jpg"));
+    const post3 = fs.readFileSync(path.join(__dirname, "images/post3.mp4"));
+
     await queryInterface.bulkInsert("Post", [
       {
         user_id: 1,
@@ -116,9 +122,14 @@ module.exports = {
         topic_id: 1,
         title: "Công nghệ blockchain mới",
         body: "Bài viết về công nghệ blockchain trong đời sống.",
-        image: null,
+        image: post1,
+        audio: null,
+        video: null,
         like_count: 5,
-        love_count: 3,
+        haha_count: 1,
+        love_count: 2,
+        wow_count: 4,
+        status: "Approved",
         created_at: new Date(),
       },
       {
@@ -127,20 +138,30 @@ module.exports = {
         topic_id: 2,
         title: "Ứng dụng AI trong y tế",
         body: "AI đang thay đổi ngành y học theo cách không ngờ.",
-        image: null,
-        like_count: 10,
-        love_count: 2,
+        image: post2,
+        audio: null,
+        video: null,
+        like_count: 12,
+        haha_count: 0,
+        love_count: 7,
+        wow_count: 8,
+        status: "Approved",
         created_at: new Date(),
       },
       {
         user_id: 3,
         admin_id: null,
         topic_id: 3,
-        title: "Phim hay tháng 10",
-        body: "Danh sách phim hot tháng 10 bạn nên xem!",
+        title: "Phim hay tháng 11",
+        body: "Arcane - Phim hot tháng 11 bạn nên xem!",
         image: null,
-        like_count: 7,
-        love_count: 1,
+        audio: null,
+        video: post3,
+        like_count: 1,
+        haha_count: 0,
+        love_count: 11,
+        wow_count: 7,
+        status: "Approved",
         created_at: new Date(),
       },
     ]);

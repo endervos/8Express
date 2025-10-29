@@ -15,19 +15,21 @@ module.exports = (sequelize, DataTypes) => {
     love_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     sad_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     wow_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
-    care_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     angry_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
-    is_disabled: { type: DataTypes.BOOLEAN, defaultValue: false },
+    status: {
+      type: DataTypes.ENUM("Pending", "Approved", "Hidden", "Banned"),
+      defaultValue: "Pending"
+    },
     created_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
     updated_at: { type: DataTypes.DATE, allowNull: true, defaultValue: DataTypes.NOW }
   }, {
     tableName: "Post",
     timestamps: false,
     validate: {
-      nonEmptyTitle(){
+      nonEmptyTitle() {
         if (!this.title || !this.title.trim()) throw new Error("title không được rỗng");
       },
-      atLeastOneContent(){
+      atLeastOneContent() {
         if (!this.body && !this.image && !this.audio && !this.video) {
           throw new Error("Bài viết phải có ít nhất body hoặc 1 media");
         }

@@ -19,7 +19,7 @@ const VerifyEmail = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/verify-otp", {
+      const res = await fetch("http://localhost:5000/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -29,7 +29,7 @@ const VerifyEmail = () => {
       if (data.success) {
         setMessage("Xác thực thành công! Tạo tài khoản...");
 
-        const registerRes = await fetch("http://localhost:5000/register", {
+        const registerRes = await fetch("http://localhost:5000/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
