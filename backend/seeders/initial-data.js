@@ -5,7 +5,7 @@ const path = require("path");
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Ảnh mẫu
+    // Avatar mẫu
     const avatar1 = fs.readFileSync(path.join(__dirname, "images/avatar1.jpeg"));
     const avatar2 = fs.readFileSync(path.join(__dirname, "images/avatar2.jpg"));
     const avatar3 = fs.readFileSync(path.join(__dirname, "images/avatar3.jpg"));
@@ -89,7 +89,7 @@ module.exports = {
         parent_thumbnail: Buffer.from("FFD8FFE000104A4649460001", "hex"),
       },
       {
-        name: "AI & Machine Learning",
+        name: "Y tế",
         sub_topic_id: 1,
         parent_thumbnail: Buffer.from("FFD8FFE000104A4649460002", "hex"),
       },
@@ -97,6 +97,31 @@ module.exports = {
         name: "Giải trí",
         sub_topic_id: null,
         parent_thumbnail: Buffer.from("FFD8FFE000104A4649460003", "hex"),
+      },
+      {
+        name: "Giáo dục",
+        sub_topic_id: null,
+        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460004", "hex"),
+      },
+      {
+        name: "Chính trị",
+        sub_topic_id: null,
+        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460005", "hex"),
+      },
+      {
+        name: "Thể thao",
+        sub_topic_id: null,
+        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460006", "hex"),
+      },
+      {
+        name: "Quân sự",
+        sub_topic_id: null,
+        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460007", "hex"),
+      },
+      {
+        name: "Văn hóa",
+        sub_topic_id: null,
+        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460008", "hex"),
       },
     ]);
 
@@ -121,7 +146,7 @@ module.exports = {
         admin_id: 1,
         topic_id: 1,
         title: "Công nghệ blockchain mới",
-        body: "Bài viết về công nghệ blockchain trong đời sống.",
+        body: "Blockchain đang là xu hướng trong lĩnh vực công nghệ.",
         image: post1,
         audio: null,
         video: null,
@@ -168,9 +193,9 @@ module.exports = {
 
     // ======== Share ========
     await queryInterface.bulkInsert("Share", [
-      { post_id: 1, shared_by: 2 },
-      { post_id: 2, shared_by: 1 },
-      { post_id: 3, shared_by: 1 },
+      { post_id: 1, shared_by: 2, shared_at: new Date() },
+      { post_id: 2, shared_by: 1, shared_at: new Date() },
+      { post_id: 3, shared_by: 1, shared_at: new Date() },
     ]);
 
     // ======== Comment ========

@@ -11,7 +11,6 @@ import UserProfile from "./User/UserProfile";
 import PostDetail from "./User/PostDetail";
 import "./index.css";
 
-// Protected routes
 const ProtectedAdminRoute = ({ children, isLoggedIn, userInfo }) => {
   if (!isLoggedIn) return <Navigate to="/login" replace />;
   if (userInfo?.role !== "admin") return <Navigate to="/" replace />;
@@ -81,6 +80,14 @@ const App = () => {
         />
         <Route
           path="/profile"
+          element={
+            <ProtectedUserRoute isLoggedIn={isLoggedIn}>
+              <UserProfile userInfo={userInfo} onUpdateUser={handleUpdateUser} />
+            </ProtectedUserRoute>
+          }
+        />
+        <Route
+          path="/user/:id"
           element={
             <ProtectedUserRoute isLoggedIn={isLoggedIn}>
               <UserProfile userInfo={userInfo} onUpdateUser={handleUpdateUser} />

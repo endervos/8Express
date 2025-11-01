@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Search, Home as HomeIcon, TrendingUp, Sparkles, Book, Atom, Sun, Code,
-  User, MessageSquare, Zap, Heart, LogOut, BarChart3
+  User, MessageSquare, Zap, Heart, LogOut, BarChart3, Share
 } from 'lucide-react';
 import './Home.css';
 import logo from '../Images/Logo.png';
 
 const categoryIcons = { zap: Zap, book: Book, atom: Atom, sun: Sun, code: Code };
 
-const PostCard = ({ post, onViewDetail }) => {
+const PostCard = ({ post, onViewDetail, navigate }) => {
   const reactions = post.reactions || [];
 
   return (
@@ -18,7 +18,10 @@ const PostCard = ({ post, onViewDetail }) => {
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center text-sm text-gray-500">
           <User size={16} className="mr-1" />
-          <span className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer">
+          <span
+            onClick={() => navigate(`/user/${post.user_id}`)}
+            className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer"
+          >
             {post.author}
           </span>
           <span className="mx-2">•</span>
@@ -61,6 +64,11 @@ const PostCard = ({ post, onViewDetail }) => {
           {/* Bình luận */}
           <span className="flex items-center gap-1">
             <MessageSquare size={16} /> {post.comments || 0}
+          </span>
+
+          {/* Chia sẻ */}
+          <span className="flex items-center gap-1">
+            <Share size={16} /> {post.shareCount || 0}
           </span>
         </div>
       </div>
@@ -294,6 +302,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                     key={post.id}
                     post={post}
                     onViewDetail={handleViewDetail}
+                    navigate={navigate}
                     isFavorite={favorites.includes(post.id)}
                     onToggleFavorite={toggleFavorite}
                   />
@@ -349,6 +358,12 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                           <span className="flex items-center gap-1">
                             <MessageSquare size={12} />
                             {post.comments || 0}
+                          </span>
+
+                          {/* Chia sẻ */}
+                          <span className="flex items-center gap-1">
+                            <Share size={12} />
+                            {post.shareCount || 0}
                           </span>
                         </div>
                       </div>
@@ -415,20 +430,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 <li><button className="hover:text-white transition">Lập trình</button></li>
                 <li><button className="hover:text-white transition">Khoa học</button></li>
               </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Nhận bản tin</h4>
-              <div className="flex gap-2">
-                <input
-                  type="email"
-                  placeholder="Email của bạn"
-                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
-                <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium text-sm transition">
-                  Đăng ký
-                </button>
-              </div>
             </div>
           </div>
 

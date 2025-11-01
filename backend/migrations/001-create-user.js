@@ -43,11 +43,11 @@ module.exports = {
           allowNull: false,
           defaultValue: false,
         },
-        createdAt: {
+        created_at: {
           type: S.DATE,
           defaultValue: S.literal("CURRENT_TIMESTAMP"),
         },
-        updatedAt: {
+        updated_at: {
           type: S.DATE,
           defaultValue: S.literal(
             "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"

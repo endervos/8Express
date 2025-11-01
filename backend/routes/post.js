@@ -38,8 +38,14 @@ router.get("/", async (req, res) => {
           { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
         );
 
+        const [shareCount] = await sequelize.query(
+          "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
+          { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
+        );
+
         return {
           id: p.id,
+          user_id: p.user_id,
           title: p.title,
           excerpt: p.body ? p.body.slice(0, 200) + "..." : "",
           author: p.User?.full_name || "Ẩn danh",
@@ -64,6 +70,7 @@ router.get("/", async (req, res) => {
             (p.sad_count || 0) +
             (p.angry_count || 0),
           comments: commentCount.c,
+          shareCount: shareCount.c,
           publishedAt: p.created_at,
           status: p.status,
         };
@@ -154,6 +161,12 @@ router.get("/:id", async (req, res) => {
         { model: Topic, attributes: ["id", "name"] },
       ],
     });
+
+    const [shareCount] = await sequelize.query(
+      "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
+      { replacements: [post.id], type: Sequelize.QueryTypes.SELECT }
+    );
+
     if (!post)
       return res.status(404).json({ success: false, message: "Không tìm thấy bài viết" });
     let userReaction = null;
@@ -194,6 +207,7 @@ router.get("/:id", async (req, res) => {
         { name: "Sad", icon: reactionMap.sad || "😢", count: post.sad_count },
         { name: "Angry", icon: reactionMap.angry || "😡", count: post.angry_count },
       ],
+      shareCount: shareCount.c,
       author: post.User?.full_name || "Ẩn danh",
       authorAvatar: toDataUrl(post.User?.avatar, "image/jpeg"),
     };
@@ -278,35 +292,49 @@ router.post("/:id/react", async (req, res) => {
 router.get("/:postId/comments", async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
+
     const comments = await sequelize.query(
       `
-      SELECT c.id, c.body AS content, c.created_at,
+      SELECT c.id, c.body AS content, c.created_at, c.parent_id,
              u.id AS user_id, u.full_name AS userName, u.avatar
       FROM Comment c
       JOIN User u ON u.id = c.user_id
       WHERE c.post_id = ?
-      ORDER BY c.created_at DESC
+      ORDER BY c.created_at ASC
       `,
       { replacements: [postId], type: Sequelize.QueryTypes.SELECT }
     );
 
-    const formatted = comments.map((c) => ({
-      id: c.id,
-      user_id: c.user_id,
-      userName: c.userName,
-      userAvatar: c.avatar
-        ? `data:image/jpeg;base64,${Buffer.from(c.avatar).toString("base64")}`
-        : null,
-      content: c.content,
-      createdAt: dayjs(c.created_at).format("HH:mm DD/MM/YYYY"),
-    }));
+    const map = {};
+    const roots = [];
 
-    res.json({ success: true, data: formatted });
+    comments.forEach((c) => {
+      map[c.id] = {
+        id: c.id,
+        user_id: c.user_id,
+        userName: c.userName,
+        userAvatar: c.avatar
+          ? `data:image/jpeg;base64,${Buffer.from(c.avatar).toString("base64")}`
+          : null,
+        content: c.content,
+        created_at: dayjs(c.created_at).format("HH:mm DD/MM/YYYY"),
+        replies: [],
+        parent_id: c.parent_id,
+      };
+    });
+
+    comments.forEach((c) => {
+      if (c.parent_id && map[c.parent_id]) {
+        map[c.parent_id].replies.push(map[c.id]);
+      } else {
+        roots.push(map[c.id]);
+      }
+    });
+
+    res.json({ success: true, data: roots });
   } catch (err) {
     console.error("Lỗi lấy comment:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Không thể lấy bình luận" });
+    res.status(500).json({ success: false, message: "Không thể lấy bình luận" });
   }
 });
 

@@ -24,7 +24,7 @@ router.get("/", async (req, res) => {
         "gender",
         "date_of_birth",
         "avatar",
-        "createdAt"
+        "created_at"
       ],
       include: [
         { model: User, as: "Followers", attributes: ["id", "full_name", "email"] },
@@ -48,12 +48,26 @@ router.get("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { full_name, email, password, gender, date_of_birth } = req.body;
-    const user = await User.findByPk(req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: "Không tìm thấy user" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader)
+      return res.status(401).json({ success: false, message: "Thiếu token" });
+
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.id !== parseInt(req.params.id)) {
+      return res
+        .status(403)
+        .json({ success: false, message: "Bạn không có quyền chỉnh sửa hồ sơ này." });
+    }
+
+    const { full_name, email, password, gender, date_of_birth, phone } = req.body;
+    const user = await User.findByPk(decoded.id);
+    if (!user)
+      return res.status(404).json({ success: false, message: "Không tìm thấy user" });
 
     if (password) user.password = await bcrypt.hash(password, 10);
-    Object.assign(user, { full_name, email, gender, date_of_birth });
+    Object.assign(user, { full_name, email, gender, date_of_birth, phone });
     await user.save();
 
     res.json({ success: true, message: "Cập nhật thành công" });
