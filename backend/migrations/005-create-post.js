@@ -26,7 +26,6 @@ module.exports = {
       updated_at: { type: S.DATE, allowNull: true, defaultValue: S.literal("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP") }
     }, { charset: "utf8mb4", collate: "utf8mb4_unicode_ci" });
 
-    // FKs
     await q.addConstraint("Post", {
       fields: ["user_id"], type: "foreign key", name: "fk_post_user",
       references: { table: "User", field: "id" }, onDelete: "CASCADE", onUpdate: "CASCADE"

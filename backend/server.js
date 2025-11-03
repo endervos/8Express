@@ -28,7 +28,6 @@ app.use("/posts", require("./routes/post"));
 app.use("/profile", require("./routes/profile"));
 app.use("/topics", require("./routes/topics"));
 app.use("/follow", require("./routes/follow"));
-app.use("/users", require("./routes/users"));
 app.use("/comments", require("./routes/comments"));
 app.use("/share", require("./routes/share"));
 

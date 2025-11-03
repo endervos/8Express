@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, MessageSquare, Share } from "lucide-react";
+import { ArrowLeft, MessageSquare, Share, MoreVertical } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import logo from "../Images/Logo.png";
 
@@ -13,8 +13,28 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
   const [forbidden, setForbidden] = useState(null);
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
-  const [isFollowing, setIsFollowing] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showSharedUsers, setShowSharedUsers] = useState(false);
+  const [sharedUsers, setSharedUsers] = useState([]);
+  const [originalMedia, setOriginalMedia] = useState({
+    image: null,
+    video: null,
+    audio: null,
+  });
+  const [editData, setEditData] = useState({
+    title: "",
+    body: "",
+    image: null,
+    video: null,
+    audio: null,
+  });
+  const [deleteFlags, setDeleteFlags] = useState({
+    image: false,
+    video: false,
+    audio: false,
+  });
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -59,6 +79,33 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
     if (postId) fetchComments();
   }, [postId, fetchComments]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".menu-wrapper")) setShowMenu(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const toBase64 = (file) =>
+    new Promise((resolve, reject) => {
+      if (!file) return resolve(null);
+      if (typeof file === "string") return resolve(file);
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const fetchSharedUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/posts/${postId}/shared-users`);
+      const j = await res.json();
+      if (j.success) setSharedUsers(j.data);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách người chia sẻ:", err);
+    }
+  };
 
   if (loading)
     return (
@@ -117,18 +164,165 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <article className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {/* Category */}
-          <div className="px-8 pt-6">
+          {/* Topic */}
+          <div className="px-8 pt-6 flex justify-between items-start relative">
             <span className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
               {post.category}
             </span>
+
+            {isOwner && (
+              <div className="relative menu-wrapper">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu((prev) => !prev);
+                  }}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-700 transition"
+                  title="Tùy chọn"
+                >
+                  <MoreVertical size={20} />
+                </button>
+
+                {showMenu && (
+                  <div className="absolute z-20 right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                    <button
+                      onClick={() => {
+                        setOriginalMedia({
+                          image: post.image,
+                          video: post.video,
+                          audio: post.audio,
+                        });
+                        setEditData({
+                          title: post.title,
+                          body: post.body,
+                          image: post.image,
+                          video: post.video,
+                          audio: post.audio,
+                        });
+                        setIsEditing(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-gray-700 hover:bg-yellow-50"
+                    >
+                      Chỉnh sửa
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          const token = localStorage.getItem("token");
+                          if (!token) return alert("Bạn cần đăng nhập!");
+                          if (post.status !== "Approved" && post.status !== "Hidden") {
+                            return alert("Chỉ bài viết đã được duyệt mới có thể ẩn hoặc hiển thị lại.");
+                          }
+                          const newStatus = post.status === "Hidden" ? "Approved" : "Hidden";
+                          const imageBase64 = await toBase64(editData.image);
+                          const videoBase64 = await toBase64(editData.video);
+                          const audioBase64 = await toBase64(editData.audio);
+                          const payload = {
+                            title: editData.title,
+                            body: editData.body,
+                            image:
+                              editData.image && typeof editData.image !== "string"
+                                ? imageBase64
+                                : editData.image === originalMedia.image
+                                  ? null
+                                  : imageBase64,
+                            video:
+                              editData.video && typeof editData.video !== "string"
+                                ? videoBase64
+                                : editData.video === originalMedia.video
+                                  ? null
+                                  : videoBase64,
+                            audio:
+                              editData.audio && typeof editData.audio !== "string"
+                                ? audioBase64
+                                : editData.audio === originalMedia.audio
+                                  ? null
+                                  : audioBase64,
+                            status: newStatus,
+                          };
+
+                          const res = await fetch(`${API_BASE}/posts/${postId}`, {
+                            method: "PUT",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify(payload),
+                          });
+
+                          const j = await res.json();
+                          if (j.success) {
+                            alert(
+                              newStatus === "Hidden"
+                                ? "Bài viết đã được ẩn."
+                                : "Bài viết đã được hiển thị lại."
+                            );
+                            setPost({ ...post, status: newStatus });
+                          } else {
+                            alert(j.message);
+                          }
+                        } catch (err) {
+                          console.error("Ẩn/hiện lỗi:", err);
+                          alert("Không thể thay đổi trạng thái bài viết.");
+                        } finally {
+                          setShowMenu(false);
+                        }
+                      }}
+                      className={`w-full text-left px-4 py-2 ${post.status === "Approved" || post.status === "Hidden"
+                        ? "text-gray-700 hover:bg-gray-50"
+                        : "text-gray-400 cursor-not-allowed opacity-60"
+                        }`}
+                      disabled={post.status !== "Approved" && post.status !== "Hidden"}
+                    >
+                      {post.status === "Hidden" ? "Hiển thị lại" : "Ẩn bài viết"}
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        if (!window.confirm("Bạn có chắc muốn xóa bài viết này?")) return;
+                        try {
+                          const token = localStorage.getItem("token");
+                          if (!token) return alert("Bạn cần đăng nhập!");
+                          const res = await fetch(`${API_BASE}/posts/${postId}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          const j = await res.json();
+                          if (j.success) {
+                            alert("Đã xóa bài viết.");
+                            navigate(`/profile/${userInfo.id}`);
+                          } else alert(j.message);
+                        } catch (err) {
+                          console.error("Lỗi xóa:", err);
+                          alert("Không thể xóa bài viết.");
+                        } finally {
+                          setShowMenu(false);
+                        }
+                      }}
+                      className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
+                    >
+                      Xóa bài viết
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Title */}
           <div className="px-8 py-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3">
-              {post.title}
-            </h1>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                className="w-full text-3xl font-bold text-gray-900 mb-3 border-b-2 border-indigo-400 focus:outline-none focus:border-indigo-600"
+              />
+            ) : (
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">{post.title}</h1>
+            )}
 
             {isOwner && (
               <span
@@ -152,12 +346,12 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               <img
                 src={post.authorAvatar || logo}
                 alt={post.author}
-                onClick={() => navigate(`/user/${post.user_id}`)}
+                onClick={() => navigate(`/profile/${post.user_id}`)}
                 className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition"
               />
               <div>
                 <p
-                  onClick={() => navigate(`/user/${post.user_id}`)}
+                  onClick={() => navigate(`/profile/${post.user_id}`)}
                   className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 transition"
                 >
                   {post.author}
@@ -178,53 +372,223 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 </div>
               </div>
             </div>
-
-            {/* Follow Button */}
-            {userInfo?.id !== post.user_id && (
-              <button
-                onClick={() => setIsFollowing(!isFollowing)}
-                className={`px-4 py-2 rounded-lg font-medium transition ${isFollowing
-                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  : "bg-indigo-600 text-white hover:bg-indigo-700"
-                  }`}
-              >
-                {isFollowing ? "Đang theo dõi" : "Theo dõi"}
-              </button>
-            )}
           </div>
 
           {/* Media */}
-          {(post.image || post.video || post.audio) && (
-            <div className="px-8 pt-6">
-              {post.image && (
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full max-h-[480px] object-cover rounded-lg mb-6"
-                />
-              )}
-              {post.video && (
-                <video
-                  src={post.video}
-                  controls
-                  className="w-full rounded-lg mb-6"
-                />
-              )}
-              {post.audio && (
-                <audio
-                  src={post.audio}
-                  controls
-                  className="w-full rounded-lg mb-6"
-                />
-              )}
-            </div>
-          )}
+          <div className="px-8 pt-6 space-y-4">
+            {isEditing ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="font-medium text-gray-700">Ảnh</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setEditData({ ...editData, image: e.target.files[0] })}
+                      className="mt-2 block w-full"
+                    />
+                  </div>
+                  {editData.image && typeof editData.image === "string" && (
+                    <div className="flex flex-col items-center">
+                      <img
+                        src={editData.image}
+                        alt="preview"
+                        className="w-32 h-20 object-cover rounded-lg"
+                      />
+                      <label className="mt-1 text-sm text-red-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={deleteFlags.image}
+                          onChange={(e) =>
+                            setDeleteFlags({ ...deleteFlags, image: e.target.checked })
+                          }
+                        />{" "}
+                        Xóa
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="font-medium text-gray-700">Video</label>
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(e) => setEditData({ ...editData, video: e.target.files[0] })}
+                      className="mt-2 block w-full"
+                    />
+                  </div>
+                  {editData.video && typeof editData.video === "string" && (
+                    <div className="flex flex-col items-center">
+                      <video
+                        src={editData.video}
+                        controls
+                        className="w-32 h-20 object-cover rounded-lg"
+                      />
+                      <label className="mt-1 text-sm text-red-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={deleteFlags.video}
+                          onChange={(e) =>
+                            setDeleteFlags({ ...deleteFlags, video: e.target.checked })
+                          }
+                        />{" "}
+                        Xóa
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <label className="font-medium text-gray-700">Âm thanh</label>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => setEditData({ ...editData, audio: e.target.files[0] })}
+                      className="mt-2 block w-full"
+                    />
+                  </div>
+                  {editData.audio && typeof editData.audio === "string" && (
+                    <div className="flex flex-col items-center">
+                      <audio
+                        src={editData.audio}
+                        controls
+                        className="w-32 h-10 rounded-lg"
+                      />
+                      <label className="mt-1 text-sm text-red-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={deleteFlags.audio}
+                          onChange={(e) =>
+                            setDeleteFlags({ ...deleteFlags, audio: e.target.checked })
+                          }
+                        />{" "}
+                        Xóa
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {post.image && (
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full max-h-[480px] object-cover rounded-lg mb-6"
+                  />
+                )}
+                {post.video && (
+                  <video src={post.video} controls className="w-full rounded-lg mb-6" />
+                )}
+                {post.audio && (
+                  <audio src={post.audio} controls className="w-full rounded-lg mb-6" />
+                )}
+              </>
+            )}
+          </div>
 
           {/* Content */}
           <div className="px-8 py-8">
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {post.content}
-            </p>
+            {isEditing ? (
+              <textarea
+                value={editData.body}
+                onChange={(e) => setEditData({ ...editData, body: e.target.value })}
+                placeholder="Nhập nội dung bài viết..."
+                className="w-full min-h-[200px] text-gray-800 border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 resize-y"
+              />
+            ) : (
+              <div className="prose prose-indigo max-w-none text-gray-800 leading-relaxed whitespace-pre-line">
+                {post.body}
+              </div>
+            )}
+
+            {isEditing && (
+              <div className="px-8 pb-8 flex gap-4 mt-6">
+                <button
+                  onClick={async () => {
+                    try {
+                      const token = localStorage.getItem("token");
+                      if (!token) return alert("Bạn cần đăng nhập!");
+                      const toBase64 = (file) =>
+                        new Promise((resolve, reject) => {
+                          if (!file) return resolve(null);
+                          if (typeof file === "string") return resolve(file);
+                          const reader = new FileReader();
+                          reader.onload = () => resolve(reader.result);
+                          reader.onerror = reject;
+                          reader.readAsDataURL(file);
+                        });
+
+                      const imageBase64 = await toBase64(editData.image);
+                      const videoBase64 = await toBase64(editData.video);
+                      const audioBase64 = await toBase64(editData.audio);
+
+                      const res = await fetch(`${API_BASE}/posts/${postId}`, {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          title: editData.title,
+                          body: editData.body,
+                          image: imageBase64,
+                          video: videoBase64,
+                          audio: audioBase64,
+                          deleteImage: deleteFlags.image,
+                          deleteVideo: deleteFlags.video,
+                          deleteAudio: deleteFlags.audio,
+                        }),
+                      });
+
+                      const j = await res.json();
+                      if (j.success) {
+                        alert("Cập nhật bài viết thành công!");
+                        const updatedRes = await fetch(`${API_BASE}/posts/${postId}`, {
+                          headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        });
+                        const updatedData = await updatedRes.json();
+                        if (updatedData.success) {
+                          setPost(updatedData.data);
+                        } else {
+                          console.warn("Không thể fetch lại bài viết sau khi cập nhật.");
+                        }
+                        setIsEditing(false);
+                        setDeleteFlags({ image: false, video: false, audio: false });
+                      } else {
+                        alert(j.message);
+                      }
+                    } catch (err) {
+                      console.error("Lỗi lưu bài viết:", err);
+                      alert("Không thể lưu thay đổi.");
+                    }
+                  }}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Lưu thay đổi
+                </button>
+
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditData({
+                      title: post.title,
+                      body: post.body,
+                      image: post.image,
+                      video: post.video,
+                      audio: post.audio,
+                    });
+                    setDeleteFlags({ image: false, video: false, audio: false });
+                  }}
+                  className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
+                >
+                  Hủy
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="px-8 py-6 border-t border-gray-200 flex justify-between items-center bg-gray-50">
@@ -303,7 +667,13 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                   <MessageSquare size={18} />
                   <span>{comments.length}</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div
+                  className="flex items-center gap-1 cursor-pointer hover:text-indigo-600 transition"
+                  onClick={() => {
+                    fetchSharedUsers();
+                    setShowSharedUsers(true);
+                  }}
+                >
                   <Share size={18} />
                   <span>{post.shareCount || 0}</span>
                 </div>
@@ -414,6 +784,57 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
             </div>
           </section>
         </article>
+        {showSharedUsers && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl w-96 max-h-[70vh] overflow-y-auto">
+              <div className="flex justify-between items-center px-4 py-3 border-b">
+                <h2 className="text-lg font-bold text-gray-800">
+                  Người đã chia sẻ bài viết
+                </h2>
+                <button
+                  onClick={() => setShowSharedUsers(false)}
+                  className="text-gray-500 hover:text-gray-800"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {sharedUsers.length === 0 ? (
+                <p className="p-4 text-center text-gray-500">
+                  Chưa có ai chia sẻ bài viết này.
+                </p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {sharedUsers.map((u) => (
+                    <li
+                      key={u.id}
+                      onClick={() => {
+                        setShowSharedUsers(false);
+                        navigate(`/profile/${u.id}`);
+                      }}
+                      className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition"
+                    >
+                      <img
+                        src={u.avatar}
+                        alt={u.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 hover:text-indigo-600 transition">
+                          {u.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{u.email}</p>
+                        <p className="text-xs text-gray-400 italic">
+                          Đã chia sẻ: {u.sharedAt}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -438,21 +859,21 @@ const CommentItem = ({
       <img
         src={comment.userAvatar || logo}
         alt={comment.userName}
-        onClick={() => navigate(`/user/${comment.user_id}`)}
+        onClick={() => navigate(`/profile/${comment.user_id}`)}
         className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition"
       />
       <div className="flex-1">
         <div className="bg-gray-50 p-4 rounded-lg">
           <div className="flex justify-between items-center mb-1">
             <span
-              onClick={() => navigate(`/user/${comment.user_id}`)}
+              onClick={() => navigate(`/profile/${comment.user_id}`)}
               className="font-semibold text-gray-800 cursor-pointer hover:text-indigo-600 transition"
             >
               {comment.userName}
             </span>
             <span className="text-xs text-gray-500">{comment.created_at}</span>
           </div>
-          <p className="text-gray-700">{comment.content}</p>
+          <p className="text-gray-700">{comment.body}</p>
 
           {isLoggedIn && (
             <button

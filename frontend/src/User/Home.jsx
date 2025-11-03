@@ -19,7 +19,7 @@ const PostCard = ({ post, onViewDetail, navigate }) => {
         <div className="flex items-center text-sm text-gray-500">
           <User size={16} className="mr-1" />
           <span
-            onClick={() => navigate(`/user/${post.user_id}`)}
+            onClick={() => navigate(`/profile/${post.user_id}`)}
             className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer"
           >
             {post.author}
@@ -46,7 +46,7 @@ const PostCard = ({ post, onViewDetail, navigate }) => {
         <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition">
           {post.title}
         </h3>
-        <p className="text-gray-600 line-clamp-2 mb-4">{post.excerpt}</p>
+        <p className="text-gray-600 mb-4 whitespace-pre-line">{post.body}</p>
 
         <div className="flex items-center text-sm text-gray-500 gap-4">
           {/* Hiển thị toàn bộ cảm xúc */}
@@ -83,7 +83,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const [activeTab, setActiveTab] = useState('new');
   const [activeCategory, setActiveCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [favorites, setFavorites] = useState([]);
+  const [interacted, setInteracted] = useState([]);
   const [topAuthors, setTopAuthors] = useState([]);
 
   useEffect(() => {
@@ -99,15 +99,32 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
       })
       .catch(err => console.error("Lỗi lấy topics:", err));
 
-    axios.get('http://localhost:5000/users/top-authors')
+    axios.get('http://localhost:5000/profile/top-authors/all')
       .then(res => {
         if (res.data.success) setTopAuthors(res.data.data);
       })
       .catch(err => console.error("Lỗi lấy top authors:", err));
   }, []);
 
-  const toggleFavorite = id => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  useEffect(() => {
+    const fetchInteracted = async () => {
+      if (!isLoggedIn || !userInfo?.id) return;
+      try {
+        const res = await axios.get(`http://localhost:5000/posts/interacted/${userInfo.id}`);
+        if (res.data.success) {
+          const approved = res.data.data.filter(p => p.status === "Approved");
+          setInteracted(approved);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy bài viết đã tương tác:", err);
+      }
+    };
+
+    fetchInteracted();
+  }, [isLoggedIn, userInfo]);
+
+  const toggleInteracted = id => {
+    setInteracted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
   const handleViewDetail = post => navigate(`/post/${post.id}`, { state: { post } });
@@ -115,20 +132,51 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const filteredPosts = useMemo(() => {
     let list = posts.filter(p => p.status === 'Approved');
 
-    if (activeCategory) list = list.filter(p => p.category === activeCategory);
+    if (activeCategory) {
+      list = list.filter(p => p.category === activeCategory);
+    }
+
     if (searchTerm) {
       const lower = searchTerm.toLowerCase();
       list = list.filter(p =>
         p.title.toLowerCase().includes(lower) ||
         p.author?.toLowerCase().includes(lower) ||
-        p.excerpt?.toLowerCase().includes(lower)
+        p.body?.toLowerCase().includes(lower)
       );
     }
 
-    if (activeTab === 'hot') return [...list].sort((a, b) => b.views - a.views);
-    if (activeTab === 'favorite') return list.filter(p => favorites.includes(p.id));
+    if (activeTab === 'hot') {
+      return [...list].sort((a, b) => {
+        const scoreA =
+          (a.reactions?.reduce((sum, r) => sum + (r.count || 0), 0) || 0) +
+          (a.comments || 0) +
+          (a.shareCount || 0);
+        const scoreB =
+          (b.reactions?.reduce((sum, r) => sum + (r.count || 0), 0) || 0) +
+          (b.comments || 0) +
+          (b.shareCount || 0);
+        return scoreB - scoreA;
+      });
+    }
+
+    if (activeTab === 'interacted') {
+      let favList = interacted.filter(p => p.status === 'Approved');
+      if (searchTerm) {
+        const lower = searchTerm.toLowerCase();
+        favList = favList.filter(p =>
+          p.title.toLowerCase().includes(lower) ||
+          p.author?.toLowerCase().includes(lower) ||
+          p.body?.toLowerCase().includes(lower)
+        );
+      }
+      if (activeCategory) {
+        favList = favList.filter(p => p.category === activeCategory);
+      }
+      return favList;
+    }
+
     return [...list].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-  }, [posts, activeCategory, activeTab, searchTerm, favorites]);
+  }, [posts, activeCategory, activeTab, searchTerm, interacted]);
 
   const topPosts = useMemo(() => [...posts]
     .filter(p => p.status === 'Approved')
@@ -193,7 +241,9 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"
                   >
                     <User size={18} />
-                    <span className="hidden sm:inline font-medium">{userInfo?.name}</span>
+                    <span className="font-medium text-gray-800">
+                      {userInfo?.name || userInfo?.full_name || "Tài khoản"}
+                    </span>
                   </button>
                   <button
                     onClick={() => {
@@ -287,10 +337,10 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 <TrendingUp size={18} className="inline mr-1 -mt-0.5" /> Nổi bật
               </button>
               <button
-                onClick={() => setActiveTab('favorite')}
-                className={`flex-1 px-6 py-3 font-semibold transition ${activeTab === 'favorite' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-indigo-600'}`}
+                onClick={() => setActiveTab('interacted')}
+                className={`flex-1 px-6 py-3 font-semibold transition ${activeTab === 'interacted' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-600 hover:text-indigo-600'}`}
               >
-                <Heart size={18} className="inline mr-1 -mt-0.5" /> Yêu thích ({favorites.length})
+                <Heart size={18} className="inline mr-1 -mt-0.5" /> Đã tương tác ({interacted.length})
               </button>
             </div>
 
@@ -303,15 +353,15 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                     post={post}
                     onViewDetail={handleViewDetail}
                     navigate={navigate}
-                    isFavorite={favorites.includes(post.id)}
-                    onToggleFavorite={toggleFavorite}
+                    isInteracted={interacted.includes(post.id)}
+                    onToggleInteracted={toggleInteracted}
                   />
                 ))
               ) : (
                 <div className="text-center p-12 bg-white rounded-xl shadow-sm">
                   <p className="text-gray-500">
-                    {activeTab === 'favorite'
-                      ? 'Bạn chưa có bài viết yêu thích nào.'
+                    {activeTab === 'interacted'
+                      ? 'Chưa có bài viết đã tương tác nào.'
                       : 'Không tìm thấy bài viết nào phù hợp.'}
                   </p>
                 </div>
@@ -337,7 +387,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                       </span>
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm line-clamp-2 mb-1">
+                        <p className="font-medium text-gray-800 text-sm mb-1 whitespace-pre-line">
                           {post.title}
                         </p>
 
@@ -376,26 +426,34 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               <div>
                 <h4 className="text-lg font-bold text-gray-800 border-b pb-3 mb-3">Tác giả nổi bật</h4>
                 <div className="space-y-3">
-                  {topAuthors.length > 0 ? (
-                    topAuthors.map((a) => (
+                  {topAuthors.map((a) => (
+                    <div
+                      key={a.id}
+                      onClick={() => navigate(`/profile/${a.id}`)}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                    >
+                      <img
+                        src={a.avatar || '/default-avatar.png'}
+                        alt={a.name}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/profile/${a.id}`);
+                        }}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-80 transition"
+                      />
                       <div
-                        key={a.id}
-                        className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/profile/${a.id}`);
+                        }}
                       >
-                        <img
-                          src={a.avatar || '/default-avatar.png'}
-                          alt={a.name}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                        />
-                        <div>
-                          <p className="font-semibold text-gray-800">{a.name}</p>
-                          <p className="text-sm text-gray-500">{a.postCount} bài viết</p>
-                        </div>
+                        <p className="font-semibold text-gray-800 hover:text-indigo-600 transition">
+                          {a.name}
+                        </p>
+                        <p className="text-sm text-gray-500">{a.postCount} bài viết</p>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500 text-sm text-center py-3">Chưa có dữ liệu tác giả.</p>
-                  )}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -425,11 +483,31 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
 
             <div>
               <h4 className="font-bold mb-4">Chủ đề</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><button className="hover:text-white transition">Công nghệ</button></li>
-                <li><button className="hover:text-white transition">Lập trình</button></li>
-                <li><button className="hover:text-white transition">Khoa học</button></li>
-              </ul>
+              {categories.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {Array.from({ length: Math.ceil(categories.length / 5) }, (_, colIndex) => (
+                    <ul key={colIndex} className="space-y-2 text-sm text-gray-400">
+                      {categories
+                        .slice(colIndex * 5, colIndex * 5 + 5)
+                        .map((cat) => (
+                          <li key={cat.id}>
+                            <button
+                              onClick={() => {
+                                setActiveCategory(cat.name);
+                                window.scrollTo({ top: 0, behavior: "smooth" });
+                              }}
+                              className="hover:text-white transition text-left w-full"
+                            >
+                              {cat.name}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-500 italic">Đang tải chủ đề...</p>
+              )}
             </div>
           </div>
 

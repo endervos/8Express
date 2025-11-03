@@ -49,7 +49,6 @@ router.post("/", async (req, res) => {
 });
 
 
-
 router.get("/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -73,7 +72,7 @@ router.get("/:userId", async (req, res) => {
       return {
         id: p.id,
         title: p.title,
-        content: p.body,
+        body: p.body,
         category: p.Topic?.name || "Chưa phân loại",
         author: p.User?.full_name || "Không rõ",
         authorAvatar: p.User?.avatar

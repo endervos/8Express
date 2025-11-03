@@ -29,7 +29,7 @@ module.exports = {
           "$2a$12$Gb.At7eG9IndyGN7hxc97eovkqeO0HuHJizrxmjkn2BEKcOefnP8G",
         full_name: "Huỳnh Thanh Trà",
         gender: "Nữ",
-        date_of_birth: "2004-03-03",
+        date_of_birth: "2004-02-02",
         avatar: avatar2,
       },
       {
@@ -39,7 +39,7 @@ module.exports = {
           "$2a$12$3fM5IZXMlZcS/jp6v2zt5OZaSVmNjpJeXp/2yDKrhh984/JhyY/cS",
         full_name: "Tô Duy Hào",
         gender: "Nam",
-        date_of_birth: "2004-02-02",
+        date_of_birth: "2004-03-03",
         avatar: avatar3,
       },
     ]);
@@ -136,7 +136,7 @@ module.exports = {
     ]);
 
     // ======== Post ========
-    const post1 = fs.readFileSync(path.join(__dirname, "images/post1.jpg"));
+    const post1 = fs.readFileSync(path.join(__dirname, "images/post1.mp3"));
     const post2 = fs.readFileSync(path.join(__dirname, "images/post2.jpg"));
     const post3 = fs.readFileSync(path.join(__dirname, "images/post3.mp4"));
 
@@ -146,9 +146,9 @@ module.exports = {
         admin_id: 1,
         topic_id: 1,
         title: "Công nghệ blockchain mới",
-        body: "Blockchain đang là xu hướng trong lĩnh vực công nghệ.",
-        image: post1,
-        audio: null,
+        body: "Blockchain đang là xu hướng trong lĩnh vực công nghệ. Hôm nay, tôi sẽ giới thiệu về công nghệ Blockchain cho bạn hiểu rõ hơn nhé!",
+        image: null,
+        audio: post1,
         video: null,
         like_count: 5,
         haha_count: 1,
@@ -162,7 +162,7 @@ module.exports = {
         admin_id: null,
         topic_id: 2,
         title: "Ứng dụng AI trong y tế",
-        body: "AI đang thay đổi ngành y học theo cách không ngờ.",
+        body: "AI thực sự đang thay đổi ngành y học theo cách không ngờ. Tôi nghĩ rằng AI sẽ là tương lai của y tế và là người bạn của chúng ta!",
         image: post2,
         audio: null,
         video: null,
@@ -177,8 +177,8 @@ module.exports = {
         user_id: 3,
         admin_id: null,
         topic_id: 3,
-        title: "Phim hay tháng 11",
-        body: "Arcane - Phim hot tháng 11 bạn nên xem!",
+        title: "Phim hay mới nhất",
+        body: "Arcane - Phim hot tháng 11! Bạn đã xem chưa?",
         image: null,
         audio: null,
         video: post3,

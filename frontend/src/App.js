@@ -87,7 +87,7 @@ const App = () => {
           }
         />
         <Route
-          path="/user/:id"
+          path="/profile/:id"
           element={
             <ProtectedUserRoute isLoggedIn={isLoggedIn}>
               <UserProfile userInfo={userInfo} onUpdateUser={handleUpdateUser} />

@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Image, Eye, Send, BookOpen, Video, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const WritePost = ({ isLoggedIn, userInfo }) => {
+const WritePost = ({ isLoggedIn }) => {
   const navigate = useNavigate();
 
   const [postData, setPostData] = useState({
     title: '',
     topic: '',
-    content: '',
+    body: '',
     image: null,
     audio: null,
     video: null,
@@ -65,7 +65,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
 
   const handlePublish = async (e) => {
     e.preventDefault();
-    if (!postData.title || !postData.topic || !postData.content) {
+    if (!postData.title || !postData.topic || !postData.body) {
       alert('Vui lòng điền đủ thông tin!');
       return;
     }
@@ -80,7 +80,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
         body: JSON.stringify({
           title: postData.title,
           topic: postData.topic,
-          content: postData.content,
+          body: postData.body,
           image: postData.image,
           video: postData.video,
           audio: postData.audio,
@@ -89,7 +89,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
 
       const data = await res.json();
       if (data.success) {
-        alert('Đăng bài thành công!');
+        alert('Viết bài thành công! Vui lòng chờ kiểm duyệt!');
         navigate('/');
       } else {
         alert(data.message);
@@ -279,8 +279,8 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
                   Nội dung bài viết <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  name="content"
-                  value={postData.content}
+                  name="body"
+                  value={postData.body}
                   onChange={handleChange}
                   placeholder="Viết nội dung bài viết của bạn ở đây..."
                   rows="15"
@@ -300,7 +300,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
           {/* Preview Tab */}
           {activeTab === 'preview' && (
             <div className="p-8">
-              {postData.title || postData.content ? (
+              {postData.title || postData.body ? (
                 <article className="prose max-w-none">
                   <h1 className="text-4xl font-bold text-gray-900 mb-4">
                     {postData.title || 'Tiêu đề bài viết'}
@@ -338,7 +338,7 @@ const WritePost = ({ isLoggedIn, userInfo }) => {
                     </div>
                   )}
                   <div className="text-gray-700 leading-relaxed whitespace-pre-wrap mt-6">
-                    {postData.content || 'Nội dung bài viết sẽ hiển thị ở đây...'}
+                    {postData.body || 'Nội dung bài viết sẽ hiển thị ở đây...'}
                   </div>
                 </article>
               ) : (

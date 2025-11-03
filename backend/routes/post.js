@@ -47,7 +47,7 @@ router.get("/", async (req, res) => {
           id: p.id,
           user_id: p.user_id,
           title: p.title,
-          excerpt: p.body ? p.body.slice(0, 200) + "..." : "",
+          body: p.body || "",
           author: p.User?.full_name || "Ẩn danh",
           category: p.Topic?.name || "Chưa phân loại",
           image: toDataUrl(p.image, "image/jpeg"),
@@ -88,9 +88,9 @@ router.get("/", async (req, res) => {
 router.post("/create", async (req, res) => {
   try {
     const { token } = req.headers;
-    const { title, topic, content, image, video, audio } = req.body;
+    const { title, topic, body, image, video, audio } = req.body;
 
-    if (!title || !topic || !content) {
+    if (!title || !topic || !body) {
       return res.status(400).json({ success: false, message: "Thiếu dữ liệu bài viết." });
     }
 
@@ -123,7 +123,7 @@ router.post("/create", async (req, res) => {
       user_id: decoded.id,
       topic_id: topicRecord.id,
       title,
-      body: content,
+      body: body,
       image: toBuffer(image, "Ảnh"),
       video: toBuffer(video, "Video"),
       audio: toBuffer(audio, "Âm thanh"),
@@ -191,7 +191,7 @@ router.get("/:id", async (req, res) => {
       user_id: post.user_id,
       topic_id: post.topic_id,
       title: post.title,
-      content: post.body || "",
+      body: post.body || "",
       image: toDataUrl(post.image, "image/jpeg"),
       audio: toDataUrl(post.audio, "audio/mpeg"),
       video: toDataUrl(post.video, "video/mp4"),
@@ -216,6 +216,127 @@ router.get("/:id", async (req, res) => {
   } catch (err) {
     console.error("GET /posts/:id", err);
     res.status(500).json({ success: false, message: "Lỗi khi lấy bài viết" });
+  }
+});
+
+
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, topic, body, image, video, audio, status } = req.body;
+    const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(403).json({ success: false, message: "Token không hợp lệ." });
+    }
+
+    const post = await Post.findByPk(id);
+    if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
+
+    if (decoded.id !== post.user_id && !decoded.isAdmin) {
+      return res.status(403).json({ success: false, message: "Không có quyền sửa bài viết này." });
+    }
+
+    if (status && status === "Hidden" && post.status !== "Approved") {
+      return res.status(403).json({
+        success: false,
+        message: "Chỉ bài viết đã được duyệt mới có thể bị ẩn.",
+      });
+    }
+
+    let topicRecord = post.topic_id;
+    if (topic) {
+      const found = await Topic.findOne({ where: { name: topic } });
+      if (!found) return res.status(400).json({ success: false, message: "Chủ đề không hợp lệ." });
+      topicRecord = found.id;
+    }
+
+    const toBuffer = (dataUrl, fieldName) => {
+      if (!dataUrl || !dataUrl.startsWith("data:")) return null;
+      const base64 = dataUrl.split(",")[1];
+      const buffer = Buffer.from(base64, "base64");
+      const MAX_SIZE = 20 * 1024 * 1024;
+      if (buffer.length > MAX_SIZE) throw new Error(`Tệp ${fieldName} vượt quá 20MB`);
+      return buffer;
+    };
+
+    const updatedFields = {
+      title: title || post.title,
+      topic_id: topicRecord,
+      body: body || post.body,
+      status: status || post.status,
+      updated_at: new Date(),
+    };
+
+    if (req.body.deleteImage) {
+      updatedFields.image = null;
+    } else if (typeof image === "string" && image.startsWith("data:")) {
+      updatedFields.image = toBuffer(image, "Ảnh");
+    } else if (image === null || image === undefined) {
+      delete updatedFields.image;
+    }
+
+    if (req.body.deleteVideo) {
+      updatedFields.video = null;
+    } else if (typeof video === "string" && video.startsWith("data:")) {
+      updatedFields.video = toBuffer(video, "Video");
+    } else if (video === null || video === undefined) {
+      delete updatedFields.video;
+    }
+
+    if (req.body.deleteAudio) {
+      updatedFields.audio = null;
+    } else if (typeof audio === "string" && audio.startsWith("data:")) {
+      updatedFields.audio = toBuffer(audio, "Âm thanh");
+    } else if (audio === null || audio === undefined) {
+      delete updatedFields.audio;
+    }
+
+    await post.update(updatedFields);
+
+    res.json({ success: true, message: "Cập nhật bài viết thành công!", post });
+  } catch (error) {
+    console.error("Lỗi sửa bài viết:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi sửa bài viết." });
+  }
+});
+
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
+
+    if (!token)
+      return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(403).json({ success: false, message: "Token không hợp lệ." });
+    }
+
+    const post = await Post.findByPk(id);
+    if (!post)
+      return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
+
+    if (decoded.id !== post.user_id && !decoded.isAdmin) {
+      return res.status(403).json({ success: false, message: "Không có quyền xóa bài viết này." });
+    }
+
+    await post.destroy();
+    res.json({ success: true, message: "Đã xóa bài viết." });
+  } catch (error) {
+    console.error("Lỗi xóa bài viết:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi xóa bài viết." });
   }
 });
 
@@ -289,13 +410,14 @@ router.post("/:id/react", async (req, res) => {
 });
 
 
+
 router.get("/:postId/comments", async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
 
     const comments = await sequelize.query(
       `
-      SELECT c.id, c.body AS content, c.created_at, c.parent_id,
+      SELECT c.id, c.body, c.created_at, c.parent_id,
              u.id AS user_id, u.full_name AS userName, u.avatar
       FROM Comment c
       JOIN User u ON u.id = c.user_id
@@ -316,7 +438,7 @@ router.get("/:postId/comments", async (req, res) => {
         userAvatar: c.avatar
           ? `data:image/jpeg;base64,${Buffer.from(c.avatar).toString("base64")}`
           : null,
-        content: c.content,
+        body: c.body,
         created_at: dayjs(c.created_at).format("HH:mm DD/MM/YYYY"),
         replies: [],
         parent_id: c.parent_id,
@@ -335,6 +457,153 @@ router.get("/:postId/comments", async (req, res) => {
   } catch (err) {
     console.error("Lỗi lấy comment:", err);
     res.status(500).json({ success: false, message: "Không thể lấy bình luận" });
+  }
+});
+
+
+router.get("/interacted/:userId", async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+    }
+    const reactedPosts = await sequelize.models.PostReaction.findAll({
+      where: { user_id: userId },
+      include: [
+        { model: sequelize.models.Post, include: [{ model: sequelize.models.Topic }, { model: sequelize.models.User }] },
+        { model: sequelize.models.Reaction, attributes: ["name", "icon"] }
+      ],
+      order: [["reacted_at", "DESC"]],
+    });
+    const commentedPosts = await sequelize.query(
+      `
+      SELECT DISTINCT p.*
+      FROM Post p
+      JOIN Comment c ON c.post_id = p.id
+      WHERE c.user_id = ?
+      `,
+      { replacements: [userId], type: Sequelize.QueryTypes.SELECT }
+    );
+    const reactionIcons = await Reaction.findAll({ attributes: ["name", "icon"] });
+    const reactionMap = Object.fromEntries(reactionIcons.map(r => [r.name.toLowerCase(), r.icon]));
+    const toDataUrl = (buf, mime) =>
+      buf && Buffer.isBuffer(buf)
+        ? `data:${mime};base64,${buf.toString("base64")}`
+        : null;
+    const postMap = new Map();
+    for (const r of reactedPosts) {
+      const p = r.Post;
+      if (!p) continue;
+      const [commentCount] = await sequelize.query(
+        "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
+        { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
+      );
+      const [shareCount] = await sequelize.query(
+        "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
+        { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
+      );
+      const reactions = [
+        { icon: reactionMap.like || "👍", count: p.like_count },
+        { icon: reactionMap.love || "❤️", count: p.love_count },
+        { icon: reactionMap.haha || "😆", count: p.haha_count },
+        { icon: reactionMap.wow || "😮", count: p.wow_count },
+        { icon: reactionMap.sad || "😢", count: p.sad_count },
+        { icon: reactionMap.angry || "😡", count: p.angry_count },
+      ];
+      postMap.set(p.id, {
+        id: p.id,
+        user_id: p.user_id,
+        title: p.title,
+        body: p.body || "",
+        author: p.User?.full_name || "Ẩn danh",
+        category: p.Topic?.name || "Chưa phân loại",
+        image: toDataUrl(p.image, "image/jpeg"),
+        video: toDataUrl(p.video, "video/mp4"),
+        audio: toDataUrl(p.audio, "audio/mpeg"),
+        publishedAt: p.created_at,
+        status: p.status,
+        reactions,
+        comments: commentCount.c,
+        shareCount: shareCount.c,
+        reaction: r.Reaction?.name || null,
+        reactionIcon: r.Reaction?.icon || null,
+      });
+    }
+    for (const p of commentedPosts) {
+      if (!postMap.has(p.id)) {
+        const user = await User.findByPk(p.user_id);
+        const topic = await Topic.findByPk(p.topic_id);
+        const [commentCount] = await sequelize.query(
+          "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
+          { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
+        );
+        const [shareCount] = await sequelize.query(
+          "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
+          { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
+        );
+        const reactions = [
+          { icon: reactionMap.like || "👍", count: p.like_count },
+          { icon: reactionMap.love || "❤️", count: p.love_count },
+          { icon: reactionMap.haha || "😆", count: p.haha_count },
+          { icon: reactionMap.wow || "😮", count: p.wow_count },
+          { icon: reactionMap.sad || "😢", count: p.sad_count },
+          { icon: reactionMap.angry || "😡", count: p.angry_count },
+        ];
+        postMap.set(p.id, {
+          id: p.id,
+          user_id: p.user_id,
+          title: p.title,
+          body: p.body || "",
+          author: user?.full_name || "Ẩn danh",
+          category: topic?.name || "Chưa phân loại",
+          image: toDataUrl(p.image, "image/jpeg"),
+          video: toDataUrl(p.video, "video/mp4"),
+          audio: toDataUrl(p.audio, "audio/mpeg"),
+          publishedAt: p.created_at,
+          status: p.status,
+          reactions,
+          comments: commentCount.c,
+          shareCount: shareCount.c,
+          reaction: null,
+          reactionIcon: null,
+        });
+      }
+    }
+    const data = Array.from(postMap.values());
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error("GET /posts/interacted/:userId", err);
+    res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách bài viết đã tương tác" });
+  }
+});
+
+
+router.get("/:postId/shared-users", async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const users = await sequelize.query(
+      `
+      SELECT u.id, u.full_name, u.email, u.avatar, s.shared_at
+      FROM Share s
+      JOIN User u ON u.id = s.shared_by
+      WHERE s.post_id = ?
+      ORDER BY s.shared_at DESC
+      `,
+      { replacements: [postId], type: Sequelize.QueryTypes.SELECT }
+    );
+    const data = users.map(u => ({
+      id: u.id,
+      name: u.full_name,
+      email: u.email,
+      avatar: u.avatar
+        ? `data:image/jpeg;base64,${Buffer.from(u.avatar).toString("base64")}`
+        : "https://i.pravatar.cc/100?u=" + u.id,
+      sharedAt: new Date(u.shared_at).toLocaleString("vi-VN")
+    }));
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error("Lỗi khi lấy danh sách người chia sẻ:", err);
+    res.status(500).json({ success: false, message: "Không thể lấy danh sách người chia sẻ." });
   }
 });
 

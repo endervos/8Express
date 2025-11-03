@@ -51,7 +51,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
       try {
         const url = id
-          ? `http://localhost:5000/users/${id}`
+          ? `http://localhost:5000/profile/${id}`
           : `http://localhost:5000/profile`;
 
         const res = await axios.get(url, {
@@ -141,15 +141,21 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
     try {
       const token = localStorage.getItem('token');
+      const payload = {
+        full_name: profileData.name,
+        phone: profileData.phone,
+        gender: profileData.gender,
+        date_of_birth: profileData.birthDate,
+        currentPassword: profileData.currentPassword || undefined,
+        password: newPassword || undefined,
+        avatar: profileData.avatar?.startsWith("data:image")
+          ? profileData.avatar
+          : undefined,
+      };
+
       const res = await axios.put(
         `http://localhost:5000/profile/${profileData.id}`,
-        {
-          full_name: profileData.name,
-          phone: profileData.phone,
-          gender: profileData.gender,
-          date_of_birth: profileData.birthDate,
-          password: newPassword || undefined,
-        },
+        payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -256,17 +262,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
               {/* Name */}
               <div className="flex-1 md:ml-6 mt-4 md:mt-0">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    name="name"
-                    value={profileData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-bold text-2xl"
-                  />
-                ) : (
-                  <h1 className="text-3xl font-bold text-gray-900">{profileData.name}</h1>
-                )}
+                <h1 className="text-3xl font-bold text-gray-900">{profileData.name}</h1>
               </div>
 
               {/* Edit Button */}
@@ -282,7 +278,13 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       </button>
                     </div>
                   ) : (
-                    <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                    <button
+                      onClick={() => {
+                        setIsEditing(true);
+                        setActiveTab('info');
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                    >
                       <Edit2 size={18} /> Chỉnh sửa
                     </button>
                   )
@@ -300,12 +302,22 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                           await axios.delete(`http://localhost:5000/follow/${profileData.id}`, {
                             headers: { Authorization: `Bearer ${token}` },
                           });
+
                           setIsFollowing(false);
+                          setProfileData((prev) => ({
+                            ...prev,
+                            followers: Math.max((prev.followers || 1) - 1, 0),
+                          }));
                         } else {
                           await axios.post(`http://localhost:5000/follow/${profileData.id}`, {}, {
                             headers: { Authorization: `Bearer ${token}` },
                           });
+
                           setIsFollowing(true);
+                          setProfileData((prev) => ({
+                            ...prev,
+                            followers: (prev.followers || 0) + 1,
+                          }));
                         }
                       } catch (err) {
                         console.error("Lỗi khi theo dõi/hủy theo dõi:", err);
@@ -314,7 +326,8 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${isFollowing
                       ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700"}`}
+                      : "bg-indigo-600 text-white hover:bg-indigo-700"
+                      }`}
                   >
                     {isFollowing ? "Đang theo dõi" : "Theo dõi"}
                   </button>
@@ -365,14 +378,39 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                 ) : (
                   <ul className="divide-y divide-gray-100">
                     {listData.map((user) => (
-                      <li key={user.id} className="flex items-center gap-3 p-4">
+                      <li
+                        key={user.id}
+                        onClick={() => {
+                          setShowList(null);
+                          navigate(`/profile/${user.id}`);
+                        }}
+                        className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition"
+                      >
                         <img
-                          src={user.avatar ? `data:image/jpeg;base64,${user.avatar}` : "https://i.pravatar.cc/50"}
+                          src={
+                            user.avatar
+                              ? `data:image/jpeg;base64,${user.avatar}`
+                              : "https://i.pravatar.cc/50"
+                          }
                           alt={user.full_name}
-                          className="w-10 h-10 rounded-full object-cover"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowList(null);
+                            navigate(`/profile/${user.id}`);
+                          }}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-80 transition"
                         />
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{user.full_name}</p>
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowList(null);
+                            navigate(`/profile/${user.id}`);
+                          }}
+                          className="flex-1"
+                        >
+                          <p className="font-medium text-gray-900 hover:text-indigo-600 transition">
+                            {user.full_name}
+                          </p>
                           <p className="text-xs text-gray-500">{user.email}</p>
                         </div>
                       </li>
@@ -395,7 +433,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                 }`}
             >
               <FileText size={18} className="inline mr-2 -mt-0.5" />
-              Bài viết của tôi
+              Bài viết đã đăng
             </button>
             <button
               onClick={() => setActiveTab('shares')}
@@ -449,29 +487,41 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                     </div>
                   ) : hasVideo ? (
                     <div className="relative h-48 overflow-hidden bg-black">
-                      <video
-                        src={post.video}
-                        controls
-                        className="w-full h-full object-cover"
-                      />
+                      <video src={post.video} controls className="w-full h-full object-cover" />
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                          {post.category}
+                        </span>
+                      </div>
                     </div>
                   ) : hasAudio ? (
-                    <div className="p-4 bg-gray-50 border-b border-gray-100">
-                      <audio controls className="w-full" src={post.audio} />
+                    <div className="relative p-4 bg-gray-50 border-b border-gray-100">
+                      <div className="absolute top-3 left-3">
+                        <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                          {post.category}
+                        </span>
+                      </div>
+                      <audio controls className="w-full mt-6" src={post.audio} />
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="p-4">
+                      <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                        {post.category}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Nội dung */}
                   <div className="p-4">
-                    <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition">
+                    <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition whitespace-pre-line">
                       {post.title}
                     </h3>
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
                       <span>{post.author}</span>
                       <span>{new Date(post.publishedAt).toLocaleString("vi-VN")}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-3">
-                      {post.content || post.body || post.excerpt || ""}
+                    <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
+                      {post.body || ""}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
                       {/* Hiển thị cảm xúc */}
@@ -520,7 +570,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                     onClick={() => navigate(`/post/${post.id}`, { state: { post } })}
                     className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer group"
                   >
-
                     {hasImage ? (
                       <div className="relative h-48 overflow-hidden">
                         <img
@@ -536,21 +585,33 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       </div>
                     ) : hasVideo ? (
                       <div className="relative h-48 overflow-hidden bg-black">
-                        <video
-                          src={post.video}
-                          controls
-                          className="w-full h-full object-cover"
-                        />
+                        <video src={post.video} controls className="w-full h-full object-cover" />
+                        <div className="absolute top-3 left-3">
+                          <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                            {post.category}
+                          </span>
+                        </div>
                       </div>
                     ) : hasAudio ? (
-                      <div className="p-4 bg-gray-50 border-b border-gray-100">
-                        <audio controls className="w-full" src={post.audio} />
+                      <div className="relative p-4 bg-gray-50 border-b border-gray-100">
+                        <div className="absolute top-3 left-3">
+                          <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
+                            {post.category}
+                          </span>
+                        </div>
+                        <audio controls className="w-full mt-6" src={post.audio} />
                       </div>
-                    ) : null}
+                    ) : (
+                      <div className="p-4">
+                        <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
+                          {post.category}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Nội dung bài viết */}
                     <div className="p-4">
-                      <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition">
+                      <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition whitespace-pre-line">
                         {post.title}
                       </h3>
                       <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
@@ -559,9 +620,8 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                           {new Date(post.publishedAt).toLocaleString("vi-VN")}
                         </span>
                       </div>
-
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-3">
-                        {post.content?.slice(0, 120)}
+                      <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
+                        {post.body}
                       </p>
 
                       {/* Ngày chia sẻ */}
@@ -664,13 +724,26 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                       <Lock size={16} />
+                      Mật khẩu hiện tại
+                    </label>
+                    <input
+                      type="password"
+                      value={profileData.currentPassword || ""}
+                      onChange={(e) => setProfileData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      placeholder="Nhập mật khẩu hiện tại (Để trống nếu không đổi mật khẩu)"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                      <Lock size={16} />
                       Mật khẩu mới
                     </label>
                     <input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Để trống nếu không đổi"
+                      placeholder="Nhập mật khẩu mới (Để trống nếu không đổi mật khẩu)"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
@@ -684,7 +757,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Nhập lại mật khẩu mới"
+                      placeholder="Nhập lại mật khẩu mới (Để trống nếu không đổi mật khẩu)"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
