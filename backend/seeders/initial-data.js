@@ -85,43 +85,27 @@ module.exports = {
     await queryInterface.bulkInsert("Topic", [
       {
         name: "Công nghệ",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460001", "hex"),
       },
       {
         name: "Y tế",
-        sub_topic_id: 1,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460002", "hex"),
       },
       {
         name: "Giải trí",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460003", "hex"),
       },
       {
         name: "Giáo dục",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460004", "hex"),
       },
       {
         name: "Chính trị",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460005", "hex"),
       },
       {
         name: "Thể thao",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460006", "hex"),
       },
       {
         name: "Quân sự",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460007", "hex"),
       },
       {
         name: "Văn hóa",
-        sub_topic_id: null,
-        parent_thumbnail: Buffer.from("FFD8FFE000104A4649460008", "hex"),
       },
     ]);
 
@@ -214,7 +198,7 @@ module.exports = {
       { post_id: 1, user_id: 1, reaction_id: 1 },
       { post_id: 1, user_id: 2, reaction_id: 2 },
       { post_id: 2, user_id: 3, reaction_id: 1 },
-      { post_id: 3, user_id: 1, reaction_id: 3 },
+      { post_id: 3, user_id: 1, reaction_id: 5 },
     ]);
 
     // ======== Follow ========
