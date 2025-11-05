@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 import axios from 'axios';
 import logo from '../images/logo.png';
 
-const UserProfile = ({ userInfo, onUpdateUser }) => {
+const Profile = ({ userInfo, onUpdateUser }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isSelf, setIsSelf] = useState(false);
@@ -793,4 +793,4 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
   );
 };
 
-export default UserProfile;
+export default Profile;

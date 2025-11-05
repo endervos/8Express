@@ -1,132 +1,156 @@
 CREATE DATABASE IF NOT EXISTS `8Express`
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
-
 USE `8Express`;
 
--- Bảng User
+
+-- User
 CREATE TABLE `User` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    phone VARCHAR(10) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    gender ENUM('Nam', 'Nữ', 'Khác') NOT NULL,
-    date_of_birth DATE NOT NULL,
-    is_banned BOOLEAN DEFAULT FALSE,
-
-    CHECK (CHAR_LENGTH(phone) = 10 AND phone REGEXP '^[0-9]{10}$'),
-    CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
-    CHECK (CHAR_LENGTH(full_name) >= 2)
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  phone VARCHAR(10) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  full_name VARCHAR(100) NOT NULL,
+  gender ENUM('Nam','Nữ','Khác') NOT NULL,
+  date_of_birth DATE NOT NULL,
+  avatar LONGBLOB NULL,
+  is_banned BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CHECK (CHAR_LENGTH(phone)=10 AND phone REGEXP '^[0-9]{10}$'),
+  CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
+  CHECK (CHAR_LENGTH(password) >= 8),
+  CHECK (CHAR_LENGTH(full_name) >= 2)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Admin
+
+-- Admin
 CREATE TABLE `Admin` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    phone VARCHAR(10) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    gender ENUM('Nam', 'Nữ', 'Khác') NOT NULL,
-    date_of_birth DATE NOT NULL,
-
-    CHECK (CHAR_LENGTH(phone) = 10 AND phone REGEXP '^[0-9]{10}$'),
-    CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
-    CHECK (CHAR_LENGTH(full_name) >= 2)
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  phone VARCHAR(10) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  full_name VARCHAR(100) NOT NULL,
+  gender ENUM('Nam','Nữ','Khác') NOT NULL,
+  date_of_birth DATE NOT NULL,
+  avatar LONGBLOB NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CHECK (CHAR_LENGTH(phone)=10 AND phone REGEXP '^[0-9]{10}$'),
+  CHECK (email REGEXP '^[^@]+@[^@]+\\.[a-z]{2,}(\\.[a-z]{2,})?$'),
+  CHECK (CHAR_LENGTH(password) >= 8),
+  CHECK (CHAR_LENGTH(full_name) >= 2)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Topic
+
+-- Topic
 CREATE TABLE `Topic` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    sub_topic_id INT DEFAULT NULL,
-    parent_thumbnail LONGBLOB NOT NULL,
-    FOREIGN KEY (sub_topic_id) REFERENCES `Topic`(id)
-        ON DELETE SET NULL ON UPDATE CASCADE
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Reaction
+
+-- Reaction
 CREATE TABLE `Reaction` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    icon LONGBLOB NOT NULL
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(50) NOT NULL,
+  icon VARCHAR(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Post
+
+-- Post
 CREATE TABLE `Post` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    admin_id INT,
-    topic_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    body TEXT,
-    image LONGBLOB,
-    audio LONGBLOB,
-    video LONGBLOB,
-    like_count INT DEFAULT 0,
-    haha_count INT DEFAULT 0,
-    love_count INT DEFAULT 0,
-    sad_count INT DEFAULT 0,
-    wow_count INT DEFAULT 0,
-    care_count INT DEFAULT 0,
-    angry_count INT DEFAULT 0,
-    is_disabled BOOLEAN DEFAULT FALSE,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    CHECK (title <> ''),
-    CHECK (
-        body IS NOT NULL OR
-        image IS NOT NULL OR
-        audio IS NOT NULL OR
-        video IS NOT NULL
-    ),
-    FOREIGN KEY (user_id) REFERENCES `User`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (admin_id) REFERENCES `Admin`(id)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (topic_id) REFERENCES `Topic`(id)
-        ON DELETE RESTRICT ON UPDATE CASCADE
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NULL,
+  admin_id INT UNSIGNED NULL,
+  topic_id INT UNSIGNED NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  body TEXT NULL,
+  image LONGBLOB NULL,
+  audio LONGBLOB NULL,
+  video LONGBLOB NULL,
+  like_count INT UNSIGNED DEFAULT 0,
+  love_count INT UNSIGNED DEFAULT 0,
+  haha_count INT UNSIGNED DEFAULT 0,
+  wow_count INT UNSIGNED DEFAULT 0,
+  sad_count INT UNSIGNED DEFAULT 0,
+  angry_count INT UNSIGNED DEFAULT 0,
+  status ENUM('Pending','Approved','Hidden','Banned') NOT NULL DEFAULT 'Pending',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CHECK (title <> ''),
+  CHECK (body IS NOT NULL OR image IS NOT NULL OR audio IS NOT NULL OR video IS NOT NULL),
+  FOREIGN KEY (user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (admin_id) REFERENCES `Admin`(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  FOREIGN KEY (topic_id) REFERENCES `Topic`(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  INDEX idx_post_user (user_id),
+  INDEX idx_post_topic (topic_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Share
+
+-- Share
 CREATE TABLE `Share` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    post_id INT NOT NULL,
-    shared_by INT NOT NULL,
-    FOREIGN KEY (post_id) REFERENCES `Post`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (shared_by) REFERENCES `User`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  admin_id INT UNSIGNED NULL,
+  shared_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES `Post`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (admin_id) REFERENCES `Admin`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  INDEX idx_share_post (post_id),
+  INDEX idx_share_user (user_id),
+  INDEX idx_share_admin (admin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng Comment
+
+-- Comment
 CREATE TABLE `Comment` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    post_id INT NOT NULL,
-    user_id INT NOT NULL,
-    body TEXT NOT NULL,
-    parent_id INT DEFAULT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES `Post`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES `User`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (parent_id) REFERENCES `Comment`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  admin_id INT UNSIGNED NULL,
+  body TEXT NOT NULL,
+  parent_id INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES `Post`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (admin_id) REFERENCES `Admin`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (parent_id) REFERENCES `Comment`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  INDEX idx_comment_post (post_id),
+  INDEX idx_comment_parent (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng PostReaction
+
+-- Follow
+CREATE TABLE `Follow` (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NULL,
+  admin_id INT UNSIGNED NULL,
+  following_user_id INT UNSIGNED NULL,
+  following_admin_id INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (admin_id) REFERENCES `Admin`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (following_user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (following_admin_id) REFERENCES `Admin`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY uq_follow_unique (user_id, admin_id, following_user_id, following_admin_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- PostReaction
 CREATE TABLE `PostReaction` (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    post_id INT NOT NULL,
-    user_id INT NOT NULL,
-    reaction_id INT NOT NULL,
-    reacted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES `Post`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES `User`(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (reaction_id) REFERENCES `Reaction`(id)
-        ON DELETE RESTRICT ON UPDATE CASCADE,
-    UNIQUE KEY uq_post_user (post_id, user_id)
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  post_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NULL,
+  admin_id INT UNSIGNED NULL,
+  reaction_id INT UNSIGNED NOT NULL,
+  reacted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES `Post`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES `User`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (admin_id) REFERENCES `Admin`(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (reaction_id) REFERENCES `Reaction`(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  UNIQUE KEY uq_post_user (post_id, user_id),
+  UNIQUE KEY uq_post_admin (post_id, admin_id),
+  INDEX idx_postreaction_post (post_id, reaction_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

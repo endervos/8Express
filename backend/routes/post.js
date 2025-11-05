@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const dayjs = require("dayjs");
-const { Sequelize, Post, User, Admin, Topic, Reaction, sequelize } = require("../models");
+const { Sequelize, User, Admin, Post, Topic, Reaction, sequelize } = require("../models");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

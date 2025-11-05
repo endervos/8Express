@@ -3,11 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 
 import Login from "./components/Login";
 import Register from "./components/Register";
-import AdminDashboard from "./components/AdminDashboard";
+import Dashboard from "./components/Dashboard";
 import VerifyEmail from "./components/VerifyEmail";
 import Home from "./components/Home";
 import WritePost from "./components/WritePost";
-import UserProfile from "./components/UserProfile";
+import UserProfile from "./components/Profile";
 import PostDetail from "./components/PostDetail";
 import "./index.css";
 
@@ -98,7 +98,7 @@ const App = () => {
           path="/admin/*"
           element={
             <ProtectedAdminRoute isLoggedIn={isLoggedIn} userInfo={userInfo}>
-              <AdminDashboard userInfo={userInfo} onLogout={handleLogout} />
+              <Dashboard userInfo={userInfo} onLogout={handleLogout} />
             </ProtectedAdminRoute>
           }
         />

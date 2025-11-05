@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const { Follow, User, Admin, Sequelize } = require("../models");
+const { User, Admin, Follow } = require("../models");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

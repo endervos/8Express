@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const { Share, Post, User, Admin, Topic } = require("../models");
+const { User, Admin, Post, Topic, Share } = require("../models");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

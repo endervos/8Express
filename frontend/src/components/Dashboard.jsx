@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import StatsView from './StatsView';
-import UsersView from './UsersView';
-import PostsView from './PostsView';
+import Stats from './Stats';
+import UsersManagement from './UsersManagement';
+import PostsManagement from './PostsManagement';
 import { useNavigate } from 'react-router-dom';
 
-const AdminDashboard = ({ userInfo, onLogout }) => {
+const Dashboard = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('stats');
   const navigate = useNavigate();
 
   const renderContent = () => {
     switch (activeTab) {
       case 'stats':
-        return <StatsView />;
+        return <Stats />;
       case 'users':
-        return <UsersView />;
+        return <UsersManagement />;
       case 'posts':
-        return <PostsView />;
+        return <PostsManagement />;
       default:
-        return <StatsView />;
+        return <Stats />;
     }
   };
 
@@ -52,4 +52,4 @@ const AdminDashboard = ({ userInfo, onLogout }) => {
   );
 };
 
-export default AdminDashboard;
+export default Dashboard;

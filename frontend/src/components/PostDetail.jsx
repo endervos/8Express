@@ -85,6 +85,14 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  const countAllComments = (comments) => {
+    if (!comments || comments.length === 0) return 0;
+    return comments.reduce(
+      (acc, c) => acc + 1 + countAllComments(c.replies || []),
+      0
+    );
+  };
+
   const toBase64 = (file) =>
     new Promise((resolve, reject) => {
       if (!file) return resolve(null);
@@ -703,7 +711,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
           </div>
           <section className="px-8 py-8 border-t border-gray-200">
             <h3 className="text-2xl font-semibold mb-6">
-              Bình luận ({comments.length})
+              Bình luận ({countAllComments(comments)})
             </h3>
             {isLoggedIn && (
               <div className="flex gap-3 mb-8">

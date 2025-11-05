@@ -12,8 +12,8 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, onGoHome }) => {
     <div className="fixed left-0 top-0 h-full w-64 bg-gray-900 text-white z-50">
       {/* Logo & Title */}
       <div className="p-6 border-b border-gray-800">
-        <h1 className="text-3xl text-center font-bold">ADMIN</h1>
-        <p className="text-gray-400 text-center text-sm mt-1">8Express Forum</p>
+        <h1 className="text-3xl text-center font-bold">Quản Trị Viên</h1>
+        <p className="text-gray-400 text-center text-sm mt-1">8Express</p>
       </div>
 
       {/* Navigation Menu */}

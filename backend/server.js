@@ -22,7 +22,7 @@ sequelize.sync()
   .catch(err => console.error("Lỗi sync DB:", err));
 
 // ===== ROUTES =====
-app.get("/", (req, res) => res.send("Server 8Express hoạt động!"));
+app.get("/", (req, res) => res.send("Server 8Express đang hoạt động!"));
 app.use("/auth", require("./routes/auth"));
 app.use("/posts", require("./routes/post"));
 app.use("/profile", require("./routes/profile"));
@@ -30,5 +30,6 @@ app.use("/topics", require("./routes/topics"));
 app.use("/follow", require("./routes/follow"));
 app.use("/comments", require("./routes/comments"));
 app.use("/share", require("./routes/share"));
+app.use("/admin", require("./routes/admin"));
 
-app.listen(PORT, () => console.log(`Server chạy tại http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Server đang chạy tại http://localhost:${PORT}`));

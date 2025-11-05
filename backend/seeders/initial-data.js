@@ -52,7 +52,7 @@ module.exports = {
         email: "user1@gmail.com",
         password:
           "$2a$12$XQKr9BOjQPcyUiEmPRM7/emAK2XwPoRsj3hf3PeFdyoDx5SDtNFE.",
-        full_name: "Nguyễn Văn A",
+        full_name: "Nguyễn Văn An",
         gender: "Nam",
         date_of_birth: "2000-05-12",
         is_banned: false,
@@ -63,7 +63,7 @@ module.exports = {
         email: "user2@gmail.com",
         password:
           "$2a$12$ISIzevER3grbhjsL4Y06ruMxbWS.enXXYRzsTTqy6ZSkOG.kNF7OG",
-        full_name: "Trần Thị B",
+        full_name: "Trần Thị Bình",
         gender: "Nữ",
         date_of_birth: "1999-08-09",
         is_banned: false,
@@ -74,7 +74,7 @@ module.exports = {
         email: "user3@gmail.com",
         password:
           "$2a$12$FucC42mpk90nO6zg86sJt.fEB6EIxMv0fPPz044cuaj8mng/nVu.a",
-        full_name: "Lê Văn C",
+        full_name: "Lê Văn Cường",
         gender: "Nam",
         date_of_birth: "2001-03-20",
         is_banned: false,
