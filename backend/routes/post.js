@@ -2,10 +2,9 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const dayjs = require("dayjs");
-const { Sequelize, Post, User, Topic, Reaction, sequelize } = require("../models");
+const { Sequelize, Post, User, Admin, Topic, Reaction, sequelize } = require("../models");
 
 const JWT_SECRET = process.env.JWT_SECRET;
-
 
 router.get("/", async (req, res) => {
   try {
@@ -14,46 +13,43 @@ router.get("/", async (req, res) => {
     if (status && status.toLowerCase() !== "all") {
       where.status = status.trim();
     }
-
     const posts = await Post.findAll({
       where,
       include: [
         { model: User, attributes: ["full_name"] },
+        { model: Admin, attributes: ["full_name"] },
         { model: Topic, attributes: ["name"] },
       ],
       order: [["created_at", "DESC"]],
     });
-
     const reactions = await Reaction.findAll({ attributes: ["id", "name", "icon"] });
     const reactionMap = Object.fromEntries(reactions.map(r => [r.name.toLowerCase(), r.icon]));
     const toDataUrl = (buf, mime) =>
       buf && Buffer.isBuffer(buf)
         ? `data:${mime};base64,${buf.toString("base64")}`
         : null;
-
     const data = await Promise.all(
       posts.map(async (p) => {
         const [commentCount] = await sequelize.query(
           "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
           { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
         );
-
         const [shareCount] = await sequelize.query(
           "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
           { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
         );
-
         return {
           id: p.id,
           user_id: p.user_id,
+          admin_id: p.admin_id,
           title: p.title,
           body: p.body || "",
-          author: p.User?.full_name || "Ẩn danh",
+          author: p.user_id ? p.User?.full_name || "Ẩn danh" : p.Admin?.full_name || "Ẩn danh",
+          authorRole: p.user_id ? "user" : "admin",
           category: p.Topic?.name || "Chưa phân loại",
           image: toDataUrl(p.image, "image/jpeg"),
           video: toDataUrl(p.video, "video/mp4"),
           audio: toDataUrl(p.audio, "audio/mpeg"),
-
           reactions: [
             { icon: reactionMap.like || "👍", count: p.like_count },
             { icon: reactionMap.love || "❤️", count: p.love_count },
@@ -76,7 +72,6 @@ router.get("/", async (req, res) => {
         };
       })
     );
-
     res.json({ success: true, data });
   } catch (error) {
     console.error("Lỗi lấy bài viết:", error);
@@ -89,15 +84,12 @@ router.post("/create", async (req, res) => {
   try {
     const { token } = req.headers;
     const { title, topic, body, image, video, audio } = req.body;
-
     if (!title || !topic || !body) {
       return res.status(400).json({ success: false, message: "Thiếu dữ liệu bài viết." });
     }
-
     if (!token) {
       return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
     }
-
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
@@ -118,19 +110,20 @@ router.post("/create", async (req, res) => {
       }
       return buffer;
     };
-
+    const userIdField = decoded.role === "admin" ? null : decoded.id;
+    const adminIdField = decoded.role === "admin" ? decoded.id : null;
     const newPost = await Post.create({
-      user_id: decoded.id,
+      user_id: userIdField,
+      admin_id: adminIdField,
       topic_id: topicRecord.id,
       title,
-      body: body,
+      body,
       image: toBuffer(image, "Ảnh"),
       video: toBuffer(video, "Video"),
       audio: toBuffer(audio, "Âm thanh"),
-      status: "Pending",
+      status: decoded.role === "admin" ? "Approved" : "Pending",
       created_at: new Date(),
     });
-
     res.json({ success: true, message: "Đăng bài thành công!", post: newPost });
   } catch (error) {
     console.error("Lỗi khi tạo bài viết:", error);
@@ -144,7 +137,6 @@ router.get("/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     if (Number.isNaN(id))
       return res.status(400).json({ success: false, message: "ID không hợp lệ" });
-
     let viewer = null;
     const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
     if (token) {
@@ -154,41 +146,40 @@ router.get("/:id", async (req, res) => {
         viewer = null;
       }
     }
-
     const post = await Post.findByPk(id, {
       include: [
         { model: User, attributes: ["id", "full_name", "avatar"] },
+        { model: Admin, attributes: ["id", "full_name", "avatar"] },
         { model: Topic, attributes: ["id", "name"] },
       ],
     });
-
     const [shareCount] = await sequelize.query(
       "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
       { replacements: [post.id], type: Sequelize.QueryTypes.SELECT }
     );
-
     if (!post)
       return res.status(404).json({ success: false, message: "Không tìm thấy bài viết" });
     let userReaction = null;
     if (viewer) {
+      const where = { post_id: id };
+      if (viewer.role === "admin") where.admin_id = viewer.id;
+      else where.user_id = viewer.id;
       const existing = await sequelize.models.PostReaction.findOne({
-        where: { post_id: id, user_id: viewer.id },
+        where,
         include: [{ model: Reaction, attributes: ["name"] }],
       });
       if (existing) userReaction = existing.Reaction.name.toLowerCase();
     }
-
     const reactions = await Reaction.findAll({ attributes: ["name", "icon"] });
     const reactionMap = Object.fromEntries(reactions.map((r) => [r.name.toLowerCase(), r.icon]));
-
     const toDataUrl = (buf, mime) =>
       buf && Buffer.isBuffer(buf)
         ? `data:${mime};base64,${buf.toString("base64")}`
         : null;
-
     const data = {
       id: post.id,
       user_id: post.user_id,
+      admin_id: post.admin_id,
       topic_id: post.topic_id,
       title: post.title,
       body: post.body || "",
@@ -208,10 +199,10 @@ router.get("/:id", async (req, res) => {
         { name: "Angry", icon: reactionMap.angry || "😡", count: post.angry_count },
       ],
       shareCount: shareCount.c,
-      author: post.User?.full_name || "Ẩn danh",
-      authorAvatar: toDataUrl(post.User?.avatar, "image/jpeg"),
+      author: post.user_id ? post.User?.full_name || "Ẩn danh" : post.Admin?.full_name || "Ẩn danh",
+      authorRole: post.user_id ? "user" : "admin",
+      authorAvatar: toDataUrl((post.Admin?.avatar || post.User?.avatar), "image/jpeg"),
     };
-
     res.json({ success: true, data });
   } catch (err) {
     console.error("GET /posts/:id", err);
@@ -225,39 +216,38 @@ router.put("/:id", async (req, res) => {
     const { id } = req.params;
     const { title, topic, body, image, video, audio, status } = req.body;
     const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
-
     if (!token) {
       return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
     }
-
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
     } catch {
       return res.status(403).json({ success: false, message: "Token không hợp lệ." });
     }
-
     const post = await Post.findByPk(id);
     if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
-
-    if (decoded.id !== post.user_id && !decoded.isAdmin) {
-      return res.status(403).json({ success: false, message: "Không có quyền sửa bài viết này." });
+    const isAuthor =
+      (decoded.role === "user" && decoded.id === post.user_id) ||
+      (decoded.role === "admin" && decoded.id === post.admin_id);
+    if (!isAuthor && decoded.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Không có quyền sửa bài viết này.",
+      });
     }
-
     if (status && status === "Hidden" && post.status !== "Approved") {
       return res.status(403).json({
         success: false,
         message: "Chỉ bài viết đã được duyệt mới có thể bị ẩn.",
       });
     }
-
     let topicRecord = post.topic_id;
     if (topic) {
       const found = await Topic.findOne({ where: { name: topic } });
       if (!found) return res.status(400).json({ success: false, message: "Chủ đề không hợp lệ." });
       topicRecord = found.id;
     }
-
     const toBuffer = (dataUrl, fieldName) => {
       if (!dataUrl || !dataUrl.startsWith("data:")) return null;
       const base64 = dataUrl.split(",")[1];
@@ -266,7 +256,6 @@ router.put("/:id", async (req, res) => {
       if (buffer.length > MAX_SIZE) throw new Error(`Tệp ${fieldName} vượt quá 20MB`);
       return buffer;
     };
-
     const updatedFields = {
       title: title || post.title,
       topic_id: topicRecord,
@@ -274,7 +263,6 @@ router.put("/:id", async (req, res) => {
       status: status || post.status,
       updated_at: new Date(),
     };
-
     if (req.body.deleteImage) {
       updatedFields.image = null;
     } else if (typeof image === "string" && image.startsWith("data:")) {
@@ -282,7 +270,6 @@ router.put("/:id", async (req, res) => {
     } else if (image === null || image === undefined) {
       delete updatedFields.image;
     }
-
     if (req.body.deleteVideo) {
       updatedFields.video = null;
     } else if (typeof video === "string" && video.startsWith("data:")) {
@@ -290,7 +277,6 @@ router.put("/:id", async (req, res) => {
     } else if (video === null || video === undefined) {
       delete updatedFields.video;
     }
-
     if (req.body.deleteAudio) {
       updatedFields.audio = null;
     } else if (typeof audio === "string" && audio.startsWith("data:")) {
@@ -298,9 +284,7 @@ router.put("/:id", async (req, res) => {
     } else if (audio === null || audio === undefined) {
       delete updatedFields.audio;
     }
-
     await post.update(updatedFields);
-
     res.json({ success: true, message: "Cập nhật bài viết thành công!", post });
   } catch (error) {
     console.error("Lỗi sửa bài viết:", error);
@@ -313,25 +297,26 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
-
     if (!token)
       return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
-
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET);
     } catch {
       return res.status(403).json({ success: false, message: "Token không hợp lệ." });
     }
-
     const post = await Post.findByPk(id);
     if (!post)
       return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
-
-    if (decoded.id !== post.user_id && !decoded.isAdmin) {
-      return res.status(403).json({ success: false, message: "Không có quyền xóa bài viết này." });
+    const isAuthor =
+      (decoded.role === "user" && decoded.id === post.user_id) ||
+      (decoded.role === "admin" && decoded.id === post.admin_id);
+    if (!isAuthor && decoded.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Không có quyền sửa bài viết này.",
+      });
     }
-
     await post.destroy();
     res.json({ success: true, message: "Đã xóa bài viết." });
   } catch (error) {
@@ -346,30 +331,33 @@ router.post("/:id/react", async (req, res) => {
     const { id } = req.params;
     const { reactionName } = req.body;
     const token = req.headers.authorization?.split(" ")[1] || req.headers.token;
-
     if (!token)
       return res.status(401).json({ success: false, message: "Thiếu token đăng nhập." });
-
     let user;
     try {
       user = jwt.verify(token, JWT_SECRET);
     } catch {
       return res.status(403).json({ success: false, message: "Token không hợp lệ." });
     }
-
     const post = await Post.findByPk(id);
     if (!post)
       return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
-
     const reaction = await Reaction.findOne({
       where: { name: reactionName },
     });
     if (!reaction)
       return res.status(400).json({ success: false, message: "Tên cảm xúc không hợp lệ." });
+    const userIdField =
+      user.role === "admin" ? null : user.id;
+    const adminIdField =
+      user.role === "admin" ? user.id : null;
     const existing = await sequelize.models.PostReaction.findOne({
-      where: { post_id: id, user_id: user.id },
+      where: {
+        post_id: id,
+        user_id: userIdField,
+        admin_id: adminIdField,
+      },
     });
-
     if (existing) {
       if (existing.reaction_id === reaction.id) {
         await existing.destroy();
@@ -393,7 +381,8 @@ router.post("/:id/react", async (req, res) => {
     } else {
       await sequelize.models.PostReaction.create({
         post_id: id,
-        user_id: user.id,
+        user_id: userIdField,
+        admin_id: adminIdField,
         reaction_id: reaction.id,
       });
       await post.increment(`${reactionName}_count`);
@@ -410,26 +399,25 @@ router.post("/:id/react", async (req, res) => {
 });
 
 
-
 router.get("/:postId/comments", async (req, res) => {
   try {
     const postId = parseInt(req.params.postId);
-
     const comments = await sequelize.query(
       `
       SELECT c.id, c.body, c.created_at, c.parent_id,
-             u.id AS user_id, u.full_name AS userName, u.avatar
+        COALESCE(u.id, a.id) AS user_id,
+        COALESCE(u.full_name, a.full_name) AS userName,
+        COALESCE(u.avatar, a.avatar) AS avatar
       FROM Comment c
-      JOIN User u ON u.id = c.user_id
+      LEFT JOIN User u ON u.id = c.user_id
+      LEFT JOIN Admin a ON a.id = c.admin_id
       WHERE c.post_id = ?
       ORDER BY c.created_at ASC
       `,
       { replacements: [postId], type: Sequelize.QueryTypes.SELECT }
     );
-
     const map = {};
     const roots = [];
-
     comments.forEach((c) => {
       map[c.id] = {
         id: c.id,
@@ -444,7 +432,6 @@ router.get("/:postId/comments", async (req, res) => {
         parent_id: c.parent_id,
       };
     });
-
     comments.forEach((c) => {
       if (c.parent_id && map[c.parent_id]) {
         map[c.parent_id].replies.push(map[c.id]);
@@ -452,7 +439,6 @@ router.get("/:postId/comments", async (req, res) => {
         roots.push(map[c.id]);
       }
     });
-
     res.json({ success: true, data: roots });
   } catch (err) {
     console.error("Lỗi lấy comment:", err);
@@ -468,10 +454,19 @@ router.get("/interacted/:userId", async (req, res) => {
       return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
     const reactedPosts = await sequelize.models.PostReaction.findAll({
-      where: { user_id: userId },
+      where: {
+        [Sequelize.Op.or]: [{ user_id: userId }, { admin_id: userId }],
+      },
       include: [
-        { model: sequelize.models.Post, include: [{ model: sequelize.models.Topic }, { model: sequelize.models.User }] },
-        { model: sequelize.models.Reaction, attributes: ["name", "icon"] }
+        {
+          model: sequelize.models.Post,
+          include: [
+            { model: sequelize.models.Topic },
+            { model: sequelize.models.User },
+            { model: sequelize.models.Admin },
+          ],
+        },
+        { model: sequelize.models.Reaction, attributes: ["name", "icon"] },
       ],
       order: [["reacted_at", "DESC"]],
     });
@@ -510,12 +505,19 @@ router.get("/interacted/:userId", async (req, res) => {
         { icon: reactionMap.sad || "😢", count: p.sad_count },
         { icon: reactionMap.angry || "😡", count: p.angry_count },
       ];
+      const isAdminPost = p.user_id == null && p.admin_id != null;
+      const authorName = isAdminPost
+        ? (p.Admin?.full_name || "Ẩn danh (Admin)")
+        : (p.User?.full_name || "Ẩn danh (User)");
+      const authorRole = isAdminPost ? "admin" : "user";
       postMap.set(p.id, {
         id: p.id,
         user_id: p.user_id,
+        admin_id: p.admin_id,
         title: p.title,
         body: p.body || "",
-        author: p.User?.full_name || "Ẩn danh",
+        author: authorName,
+        authorRole: authorRole,
         category: p.Topic?.name || "Chưa phân loại",
         image: toDataUrl(p.image, "image/jpeg"),
         video: toDataUrl(p.video, "video/mp4"),
@@ -532,6 +534,7 @@ router.get("/interacted/:userId", async (req, res) => {
     for (const p of commentedPosts) {
       if (!postMap.has(p.id)) {
         const user = await User.findByPk(p.user_id);
+        const admin = await Admin.findByPk(p.admin_id);
         const topic = await Topic.findByPk(p.topic_id);
         const [commentCount] = await sequelize.query(
           "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
@@ -549,12 +552,19 @@ router.get("/interacted/:userId", async (req, res) => {
           { icon: reactionMap.sad || "😢", count: p.sad_count },
           { icon: reactionMap.angry || "😡", count: p.angry_count },
         ];
+        const isAdminPost = p.user_id == null && p.admin_id != null;
+        const authorName = isAdminPost
+          ? (admin?.full_name || "Ẩn danh (Admin)")
+          : (user?.full_name || "Ẩn danh (User)");
+        const authorRole = isAdminPost ? "admin" : "user";
         postMap.set(p.id, {
           id: p.id,
           user_id: p.user_id,
+          admin_id: p.admin_id,
           title: p.title,
           body: p.body || "",
-          author: user?.full_name || "Ẩn danh",
+          author: authorName,
+          authorRole: authorRole,
           category: topic?.name || "Chưa phân loại",
           image: toDataUrl(p.image, "image/jpeg"),
           video: toDataUrl(p.video, "video/mp4"),
@@ -573,37 +583,55 @@ router.get("/interacted/:userId", async (req, res) => {
     res.json({ success: true, data });
   } catch (err) {
     console.error("GET /posts/interacted/:userId", err);
-    res.status(500).json({ success: false, message: "Lỗi khi lấy danh sách bài viết đã tương tác" });
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy danh sách bài viết đã tương tác",
+    });
   }
 });
 
 
-router.get("/:postId/shared-users", async (req, res) => {
+router.get("/:postId/shared-list", async (req, res) => {
   try {
     const { postId } = req.params;
-    const users = await sequelize.query(
+    const shared = await sequelize.query(
       `
-      SELECT u.id, u.full_name, u.email, u.avatar, s.shared_at
+      SELECT 
+        COALESCE(u.id, a.id) AS id,
+        COALESCE(u.full_name, a.full_name) AS full_name,
+        COALESCE(u.email, a.email) AS email,
+        COALESCE(u.avatar, a.avatar) AS avatar,
+        CASE 
+          WHEN s.user_id IS NOT NULL THEN 'user'
+          WHEN s.admin_id IS NOT NULL THEN 'admin'
+          ELSE 'unknown'
+        END AS role,
+        s.shared_at
       FROM Share s
-      JOIN User u ON u.id = s.shared_by
+      LEFT JOIN User u ON u.id = s.user_id
+      LEFT JOIN Admin a ON a.id = s.admin_id
       WHERE s.post_id = ?
       ORDER BY s.shared_at DESC
       `,
       { replacements: [postId], type: Sequelize.QueryTypes.SELECT }
     );
-    const data = users.map(u => ({
+    const data = shared.map((u) => ({
       id: u.id,
       name: u.full_name,
       email: u.email,
+      role: u.role,
       avatar: u.avatar
         ? `data:image/jpeg;base64,${Buffer.from(u.avatar).toString("base64")}`
-        : "https://i.pravatar.cc/100?u=" + u.id,
-      sharedAt: new Date(u.shared_at).toLocaleString("vi-VN")
+        : `https://i.pravatar.cc/100?u=${u.id}`,
+      sharedAt: new Date(u.shared_at).toLocaleString("vi-VN"),
     }));
     res.json({ success: true, data });
   } catch (err) {
-    console.error("Lỗi khi lấy danh sách người chia sẻ:", err);
-    res.status(500).json({ success: false, message: "Không thể lấy danh sách người chia sẻ." });
+    console.error("Lỗi khi lấy danh sách chia sẻ:", err);
+    res.status(500).json({
+      success: false,
+      message: "Không thể lấy danh sách chia sẻ.",
+    });
   }
 });
 

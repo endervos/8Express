@@ -13,14 +13,12 @@ router.get("/", async (req, res) => {
         },
       ],
     });
-
     const data = topics.map((t) => ({
       id: t.id,
       name: t.name,
       icon: "book",
       postCount: t.Posts ? t.Posts.length : 0,
     }));
-
     res.json({ success: true, data });
   } catch (err) {
     console.error("Lỗi lấy chủ đề:", err);

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 
 const WritePost = ({ isLoggedIn }) => {
   const navigate = useNavigate();
-
   const [postData, setPostData] = useState({
     title: '',
     topic: '',
@@ -13,7 +12,6 @@ const WritePost = ({ isLoggedIn }) => {
     audio: null,
     video: null,
   });
-
   const [topics, setTopics] = useState([]);
   const [activeTab, setActiveTab] = useState('write');
 
@@ -22,7 +20,6 @@ const WritePost = ({ isLoggedIn }) => {
       navigate('/login');
       return;
     }
-
     const fetchTopics = async () => {
       try {
         const res = await fetch('http://localhost:5000/topics');
@@ -36,7 +33,6 @@ const WritePost = ({ isLoggedIn }) => {
         console.error('Lỗi tải topic:', err);
       }
     };
-
     fetchTopics();
   }, [isLoggedIn, navigate]);
 
@@ -54,7 +50,6 @@ const WritePost = ({ isLoggedIn }) => {
         e.target.value = "";
         return;
       }
-
       const reader = new FileReader();
       reader.onloadend = () => {
         setPostData((prev) => ({ ...prev, [field]: reader.result }));
@@ -86,10 +81,9 @@ const WritePost = ({ isLoggedIn }) => {
           audio: postData.audio,
         }),
       });
-
       const data = await res.json();
       if (data.success) {
-        alert('Viết bài thành công! Vui lòng chờ kiểm duyệt!');
+        alert('Viết bài thành công!');
         navigate('/');
       } else {
         alert(data.message);
@@ -115,9 +109,7 @@ const WritePost = ({ isLoggedIn }) => {
               <ArrowLeft size={20} />
               <span className="font-medium">Quay lại</span>
             </button>
-
             <h1 className="text-2xl font-bold text-gray-800">Viết bài mới</h1>
-
             <div className="flex items-center gap-3">
               <button
                 onClick={handlePublish}
@@ -161,7 +153,6 @@ const WritePost = ({ isLoggedIn }) => {
           {/* Write Tab */}
           {activeTab === 'write' && (
             <form className="p-8 space-y-6">
-              {/* Tiêu đề */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tiêu đề bài viết <span className="text-red-500">*</span>
@@ -176,8 +167,6 @@ const WritePost = ({ isLoggedIn }) => {
                   required
                 />
               </div>
-
-              {/* Chủ đề */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Chủ đề <span className="text-red-500">*</span>
@@ -197,8 +186,6 @@ const WritePost = ({ isLoggedIn }) => {
                   ))}
                 </select>
               </div>
-
-              {/* Upload Media */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Image */}
                 <div>
@@ -223,7 +210,6 @@ const WritePost = ({ isLoggedIn }) => {
                     />
                   )}
                 </div>
-
                 {/* Video */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -247,7 +233,6 @@ const WritePost = ({ isLoggedIn }) => {
                     />
                   )}
                 </div>
-
                 {/* Audio */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -272,7 +257,6 @@ const WritePost = ({ isLoggedIn }) => {
                   )}
                 </div>
               </div>
-
               {/* Nội dung */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -288,7 +272,6 @@ const WritePost = ({ isLoggedIn }) => {
                   required
                 />
               </div>
-
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                 <p className="text-sm text-blue-800">
                   <strong>Lưu ý:</strong> Bài viết của bạn sẽ được kiểm duyệt trước khi xuất bản.
@@ -296,7 +279,6 @@ const WritePost = ({ isLoggedIn }) => {
               </div>
             </form>
           )}
-
           {/* Preview Tab */}
           {activeTab === 'preview' && (
             <div className="p-8">

@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, MessageSquare, Share, MoreVertical } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import logo from "../Images/Logo.png";
+import logo from "../images/logo.png";
 
 const API_BASE = "http://localhost:5000";
 
 const PostDetail = ({ isLoggedIn, userInfo }) => {
   const { postId } = useParams();
   const navigate = useNavigate();
-
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(null);
   const [post, setPost] = useState(null);
@@ -43,7 +42,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
         const res = await fetch(`${API_BASE}/posts/${postId}`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-
         if (res.status === 403) {
           const j = await res.json();
           setForbidden(j.message);
@@ -99,7 +97,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
 
   const fetchSharedUsers = async () => {
     try {
-      const res = await fetch(`${API_BASE}/posts/${postId}/shared-users`);
+      const res = await fetch(`${API_BASE}/posts/${postId}/shared-list`);
       const j = await res.json();
       if (j.success) setSharedUsers(j.data);
     } catch (err) {
@@ -138,7 +136,9 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
       </div>
     );
 
-  const isOwner = userInfo?.id === post.user_id;
+  const isOwner =
+    (userInfo?.role === "user" && userInfo?.id === post.user_id) ||
+    (userInfo?.role === "admin" && userInfo?.id === post.admin_id);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -161,7 +161,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
           <div className="w-10" />
         </div>
       </header>
-
       <main className="max-w-5xl mx-auto px-4 py-8">
         <article className="bg-white rounded-xl shadow-sm overflow-hidden">
           {/* Topic */}
@@ -169,7 +168,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
             <span className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
               {post.category}
             </span>
-
             {isOwner && (
               <div className="relative menu-wrapper">
                 <button
@@ -182,7 +180,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 >
                   <MoreVertical size={20} />
                 </button>
-
                 {showMenu && (
                   <div className="absolute z-20 right-0 mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
                     <button
@@ -206,7 +203,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     >
                       Chỉnh sửa
                     </button>
-
                     <button
                       onClick={async () => {
                         try {
@@ -242,7 +238,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                                   : audioBase64,
                             status: newStatus,
                           };
-
                           const res = await fetch(`${API_BASE}/posts/${postId}`, {
                             method: "PUT",
                             headers: {
@@ -251,7 +246,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                             },
                             body: JSON.stringify(payload),
                           });
-
                           const j = await res.json();
                           if (j.success) {
                             alert(
@@ -278,7 +272,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     >
                       {post.status === "Hidden" ? "Hiển thị lại" : "Ẩn bài viết"}
                     </button>
-
                     <button
                       onClick={async () => {
                         if (!window.confirm("Bạn có chắc muốn xóa bài viết này?")) return;
@@ -346,12 +339,12 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               <img
                 src={post.authorAvatar || logo}
                 alt={post.author}
-                onClick={() => navigate(`/profile/${post.user_id}`)}
+                onClick={() => navigate(`/profile/${post.authorRole === "admin" ? post.admin_id : post.user_id}?role=${post.authorRole}`)}
                 className="w-12 h-12 rounded-full object-cover cursor-pointer hover:opacity-80 transition"
               />
               <div>
                 <p
-                  onClick={() => navigate(`/profile/${post.user_id}`)}
+                  onClick={() => navigate(`/profile/${post.authorRole === "admin" ? post.admin_id : post.user_id}?role=${post.authorRole}`)}
                   className="font-semibold text-gray-900 cursor-pointer hover:text-indigo-600 transition"
                 >
                   {post.author}
@@ -521,11 +514,9 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                           reader.onerror = reject;
                           reader.readAsDataURL(file);
                         });
-
                       const imageBase64 = await toBase64(editData.image);
                       const videoBase64 = await toBase64(editData.video);
                       const audioBase64 = await toBase64(editData.audio);
-
                       const res = await fetch(`${API_BASE}/posts/${postId}`, {
                         method: "PUT",
                         headers: {
@@ -543,7 +534,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                           deleteAudio: deleteFlags.audio,
                         }),
                       });
-
                       const j = await res.json();
                       if (j.success) {
                         alert("Cập nhật bài viết thành công!");
@@ -570,7 +560,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 >
                   Lưu thay đổi
                 </button>
-
                 <button
                   onClick={() => {
                     setIsEditing(false);
@@ -590,7 +579,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </div>
             )}
           </div>
-
           <div className="px-8 py-6 border-t border-gray-200 flex justify-between items-center bg-gray-50">
             <div className="flex flex-wrap items-center gap-4 text-gray-700">
               {post.reactions && post.reactions.length > 0 ? (
@@ -661,7 +649,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                   Chưa có cảm xúc nào
                 </span>
               )}
-
               <div className="flex items-center gap-4 text-gray-600 ml-4">
                 <div className="flex items-center gap-1">
                   <MessageSquare size={18} />
@@ -679,7 +666,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-2">
               <button
                 className="p-2 hover:bg-gray-200 rounded-full"
@@ -690,13 +676,14 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     return;
                   }
                   try {
+                    const token = localStorage.getItem("token");
                     const res = await fetch(`${API_BASE}/share`, {
                       method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        post_id: postId,
-                        user_id: userInfo.id,
-                      }),
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ post_id: postId }),
                     });
                     const j = await res.json();
                     if (j.success) {
@@ -714,12 +701,10 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </button>
             </div>
           </div>
-
           <section className="px-8 py-8 border-t border-gray-200">
             <h3 className="text-2xl font-semibold mb-6">
               Bình luận ({comments.length})
             </h3>
-
             {isLoggedIn && (
               <div className="flex gap-3 mb-8">
                 <img
@@ -743,13 +728,17 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                       disabled={!commentText.trim()}
                       onClick={async () => {
                         try {
+                          const token = localStorage.getItem("token");
                           const res = await fetch(`${API_BASE}/comments`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${token}`,
+                            },
                             body: JSON.stringify({
                               post_id: postId,
-                              user_id: userInfo.id,
                               body: commentText,
+                              parent_id: null,
                             }),
                           });
                           const j = await res.json();
@@ -769,7 +758,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 </div>
               </div>
             )}
-
             <div className="space-y-4">
               {comments.map((c) => (
                 <CommentItem
@@ -798,7 +786,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                   ✕
                 </button>
               </div>
-
               {sharedUsers.length === 0 ? (
                 <p className="p-4 text-center text-gray-500">
                   Chưa có ai chia sẻ bài viết này.
@@ -897,12 +884,15 @@ const CommentItem = ({
                   disabled={!replyText.trim()}
                   onClick={async () => {
                     try {
+                      const token = localStorage.getItem("token");
                       const res = await fetch(`${API_BASE}/comments`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
                         body: JSON.stringify({
                           post_id: postId,
-                          user_id: userInfo.id,
                           body: replyText,
                           parent_id: comment.id,
                         }),

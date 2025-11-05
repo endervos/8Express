@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-
       phone: {
         type: DataTypes.STRING(10),
         allowNull: false,
@@ -22,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       email: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -35,7 +33,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       password: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -47,7 +44,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       full_name: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -59,7 +55,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       gender: {
         type: DataTypes.ENUM("Nam", "Nữ", "Khác"),
         allowNull: false,
@@ -70,7 +65,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       date_of_birth: {
         type: DataTypes.DATEONLY,
         allowNull: false,
@@ -85,12 +79,10 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       avatar: {
         type: DataTypes.BLOB("long"),
         allowNull: true,
       },
-
       is_banned: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
@@ -103,26 +95,31 @@ module.exports = (sequelize, DataTypes) => {
       collate: "utf8mb4_unicode_ci",
     }
   );
-
-
   User.associate = (models) => {
     User.hasMany(models.Post, { foreignKey: "user_id" });
-    User.hasMany(models.Share, { foreignKey: "shared_by" });
+    User.hasMany(models.Share, { foreignKey: "user_id" });
     User.hasMany(models.Comment, { foreignKey: "user_id" });
     User.hasMany(models.PostReaction, { foreignKey: "user_id" });
+    User.hasMany(models.Follow, {
+      foreignKey: "user_id",
+      as: "FollowingLinks",
+    });
+    User.hasMany(models.Follow, {
+      foreignKey: "following_user_id",
+      as: "FollowerLinks",
+    });
     User.belongsToMany(models.User, {
       through: models.Follow,
       as: "Followers",
-      foreignKey: "following_id",
-      otherKey: "follower_id",
+      foreignKey: "following_user_id",
+      otherKey: "user_id",
     });
     User.belongsToMany(models.User, {
       through: models.Follow,
       as: "Following",
-      foreignKey: "follower_id",
-      otherKey: "following_id",
+      foreignKey: "user_id",
+      otherKey: "following_user_id",
     });
   };
-
   return User;
 };

@@ -1,8 +1,9 @@
 "use strict";
+
 module.exports = (sequelize, DataTypes) => {
   const Post = sequelize.define("Post", {
     id: { type: DataTypes.INTEGER.UNSIGNED, primaryKey: true, autoIncrement: true },
-    user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
+    user_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     admin_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     topic_id: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     title: { type: DataTypes.STRING(255), allowNull: false },
@@ -11,10 +12,10 @@ module.exports = (sequelize, DataTypes) => {
     audio: { type: DataTypes.BLOB("long"), allowNull: true },
     video: { type: DataTypes.BLOB("long"), allowNull: true },
     like_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
-    haha_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     love_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
-    sad_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
+    haha_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     wow_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
+    sad_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     angry_count: { type: DataTypes.INTEGER.UNSIGNED, defaultValue: 0 },
     status: {
       type: DataTypes.ENUM("Pending", "Approved", "Hidden", "Banned"),
@@ -36,7 +37,6 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
   });
-
   Post.associate = (models) => {
     Post.belongsTo(models.User, { foreignKey: "user_id" });
     Post.belongsTo(models.Admin, { foreignKey: "admin_id" });

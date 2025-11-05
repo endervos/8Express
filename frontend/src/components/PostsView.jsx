@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Edit, Trash2, Eye, X, CheckCircle, MessageSquare, ThumbsUp } from 'lucide-react';
-import { mockPosts } from '../User/MockData';
+import { mockPosts } from './MockData';
 
 const PostsView = () => {
   const [searchTerm, setSearchTerm] = useState('');

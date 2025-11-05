@@ -31,10 +31,12 @@ const Login = ({ onLogin }) => {
 
       if (data.success) {
         localStorage.setItem("token", data.token);
-        onLogin({ ...data.user, role: "user" });
-        navigate("/");
-      } else {
-        setError(data.message || "Email hoặc mật khẩu không đúng!");
+        onLogin(data.user);
+        if (data.user.role === "admin") {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/");
+        }
       }
     } catch (err) {
       console.error("Lỗi kết nối tới server:", err);

@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
-
       phone: {
         type: DataTypes.STRING(10),
         allowNull: false,
@@ -22,7 +21,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       email: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -35,7 +33,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       password: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -47,7 +44,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       full_name: {
         type: DataTypes.STRING(100),
         allowNull: false,
@@ -59,7 +55,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       gender: {
         type: DataTypes.ENUM("Nam", "Nữ", "Khác"),
         allowNull: false,
@@ -70,7 +65,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       date_of_birth: {
         type: DataTypes.DATEONLY,
         allowNull: false,
@@ -86,7 +80,6 @@ module.exports = (sequelize, DataTypes) => {
           },
         },
       },
-
       avatar: {
         type: DataTypes.BLOB("long"),
         allowNull: true,
@@ -99,10 +92,40 @@ module.exports = (sequelize, DataTypes) => {
       collate: "utf8mb4_unicode_ci",
     }
   );
-
   Admin.associate = (models) => {
     Admin.hasMany(models.Post, { foreignKey: "admin_id" });
+    Admin.hasMany(models.Follow, {
+      foreignKey: "admin_id",
+      as: "FollowingLinks",
+    });
+    Admin.hasMany(models.Follow, {
+      foreignKey: "following_admin_id",
+      as: "FollowerLinks",
+    });
+    Admin.belongsToMany(models.User, {
+      through: models.Follow,
+      as: "FollowerUsers",
+      foreignKey: "following_admin_id",
+      otherKey: "user_id",
+    });
+    Admin.belongsToMany(models.Admin, {
+      through: models.Follow,
+      as: "FollowerAdmins",
+      foreignKey: "following_admin_id",
+      otherKey: "admin_id",
+    });
+    Admin.belongsToMany(models.User, {
+      through: models.Follow,
+      as: "FollowingUsers",
+      foreignKey: "admin_id",
+      otherKey: "following_user_id",
+    });
+    Admin.belongsToMany(models.Admin, {
+      through: models.Follow,
+      as: "FollowingAdmins",
+      foreignKey: "admin_id",
+      otherKey: "following_admin_id",
+    });
   };
-
   return Admin;
 };

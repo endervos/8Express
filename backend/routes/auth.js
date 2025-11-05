@@ -3,12 +3,11 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const dayjs = require("dayjs");
-const { User } = require("../models");
+const { User, Admin } = require("../models");
 const { sendVerificationEmail } = require("../utils/mailer");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const otpStore = new Map();
-
 
 router.post("/send-otp", async (req, res) => {
   try {
@@ -17,10 +16,8 @@ router.post("/send-otp", async (req, res) => {
       return res
         .status(400)
         .json({ success: false, message: "Thiếu email" });
-
     const code = Math.floor(100000 + Math.random() * 900000);
     otpStore.set(email, { code, expiresAt: dayjs().add(5, "minute") });
-
     await sendVerificationEmail(email, code);
     res.json({ success: true, message: "Mã xác thực đã được gửi." });
   } catch (err) {
@@ -35,7 +32,6 @@ router.post("/send-otp", async (req, res) => {
 router.post("/verify-otp", (req, res) => {
   const { email, code } = req.body;
   const record = otpStore.get(email);
-
   if (!record)
     return res
       .status(400)
@@ -48,7 +44,6 @@ router.post("/verify-otp", (req, res) => {
     return res
       .status(400)
       .json({ success: false, message: "Mã không chính xác." });
-
   otpStore.delete(email);
   res.json({ success: true, message: "Xác thực thành công!" });
 });
@@ -67,13 +62,11 @@ router.post("/register", async (req, res) => {
       gender,
     } = req.body;
     const date_of_birth = `${birthYear}-${birthMonth}-${birthDay}`;
-
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser)
       return res
         .status(400)
         .json({ success: false, message: "Email đã tồn tại!" });
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await User.create({
       full_name: fullName,
@@ -83,7 +76,6 @@ router.post("/register", async (req, res) => {
       gender,
       date_of_birth,
     });
-
     res.json({
       success: true,
       message: "Đăng ký thành công!",
@@ -105,48 +97,60 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ where: { email } });
-    if (!user)
+    const [user, admin] = await Promise.all([
+      User.findOne({ where: { email } }),
+      Admin.findOne({ where: { email } }),
+    ]);
+    let account = null;
+    let role = "";
+    if (user) {
+      const match = await bcrypt.compare(password, user.password);
+      if (!match)
+        return res
+          .status(401)
+          .json({ success: false, message: "Email hoặc mật khẩu sai!" });
+      account = user;
+      role = "user";
+    } else if (admin) {
+      const match = await bcrypt.compare(password, admin.password);
+      if (!match)
+        return res
+          .status(401)
+          .json({ success: false, message: "Email hoặc mật khẩu sai!" });
+      account = admin;
+      role = "admin";
+    } else {
       return res
         .status(401)
         .json({ success: false, message: "Email hoặc mật khẩu sai!" });
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res
-        .status(401)
-        .json({ success: false, message: "Email hoặc mật khẩu sai!" });
-
+    }
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: account.id, email: account.email, role },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
-
     const avatarBase64 =
-      user.avatar && Buffer.isBuffer(user.avatar)
-        ? user.avatar.toString("base64")
+      account.avatar && Buffer.isBuffer(account.avatar)
+        ? account.avatar.toString("base64")
         : null;
-
     res.json({
       success: true,
       message: "Đăng nhập thành công!",
       token,
       user: {
-        id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        gender: user.gender,
-        phone: user.phone,
-        date_of_birth: user.date_of_birth,
+        id: account.id,
+        full_name: account.full_name,
+        email: account.email,
+        gender: account.gender,
+        phone: account.phone,
+        date_of_birth: account.date_of_birth,
         avatar: avatarBase64,
+        role,
       },
     });
   } catch (error) {
     console.error("Lỗi đăng nhập:", error);
-    res
-      .status(500)
-      .json({ success: false, message: "Lỗi server." });
+    res.status(500).json({ success: false, message: "Lỗi server." });
   }
 });
 

@@ -54,15 +54,12 @@ module.exports = {
         collate: "utf8mb4_unicode_ci",
       }
     );
-
-
     await q.addConstraint("Admin", {
       fields: ["phone"],
       type: "check",
       where: S.literal("CHAR_LENGTH(phone)=10 AND phone REGEXP '^[0-9]{10}$'"),
       name: "chk_admin_phone_10digits",
     });
-
     await q.addConstraint("Admin", {
       fields: ["email"],
       type: "check",
@@ -71,14 +68,12 @@ module.exports = {
       ),
       name: "chk_admin_email_format",
     });
-
     await q.addConstraint("Admin", {
       fields: ["password"],
       type: "check",
       where: S.literal("CHAR_LENGTH(password) >= 8"),
       name: "chk_admin_password_min8",
     });
-
     await q.addConstraint("Admin", {
       fields: ["full_name"],
       type: "check",
@@ -86,7 +81,6 @@ module.exports = {
       name: "chk_admin_fullname_len",
     });
   },
-
   async down(q) {
     await q.dropTable("Admin");
   },

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
-import Login from "./Admin/Login";
-import Register from "./Admin/Register";
-import AdminDashboard from "./Admin/AdminDashboard";
-import VerifyEmail from "./Admin/VerifyEmail";
-import Home from "./User/Home";
-import WritePost from "./User/WritePost";
-import UserProfile from "./User/UserProfile";
-import PostDetail from "./User/PostDetail";
+import Login from "./components/Login";
+import Register from "./components/Register";
+import AdminDashboard from "./components/AdminDashboard";
+import VerifyEmail from "./components/VerifyEmail";
+import Home from "./components/Home";
+import WritePost from "./components/WritePost";
+import UserProfile from "./components/UserProfile";
+import PostDetail from "./components/PostDetail";
 import "./index.css";
 
 const ProtectedAdminRoute = ({ children, isLoggedIn, userInfo }) => {

@@ -6,7 +6,7 @@ import {
   User, MessageSquare, Zap, Heart, LogOut, BarChart3, Share
 } from 'lucide-react';
 import './Home.css';
-import logo from '../Images/Logo.png';
+import logo from '../images/logo.png';
 
 const categoryIcons = { zap: Zap, book: Book, atom: Atom, sun: Sun, code: Code };
 
@@ -19,7 +19,12 @@ const PostCard = ({ post, onViewDetail, navigate }) => {
         <div className="flex items-center text-sm text-gray-500">
           <User size={16} className="mr-1" />
           <span
-            onClick={() => navigate(`/profile/${post.user_id}`)}
+            onClick={() =>
+              navigate(
+                `/profile/${post.authorRole === "admin" ? post.admin_id : post.user_id}?role=${post.authorRole || "user"
+                }`
+              )
+            }
             className="font-medium text-gray-700 hover:text-indigo-600 cursor-pointer"
           >
             {post.author}
@@ -129,6 +134,13 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
 
   const handleViewDetail = post => navigate(`/post/${post.id}`, { state: { post } });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, activeCategory, searchTerm]);
+
   const filteredPosts = useMemo(() => {
     let list = posts.filter(p => p.status === 'Approved');
 
@@ -177,6 +189,11 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
 
     return [...list].sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
   }, [posts, activeCategory, activeTab, searchTerm, interacted]);
+
+  const paginatedPosts = useMemo(() => {
+    const start = (currentPage - 1) * postsPerPage;
+    return filteredPosts.slice(start, start + postsPerPage);
+  }, [filteredPosts, currentPage]);
 
   const topPosts = useMemo(() => [...posts]
     .filter(p => p.status === 'Approved')
@@ -346,8 +363,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
 
             {/* Posts List */}
             <div className="space-y-4">
-              {filteredPosts.length > 0 ? (
-                filteredPosts.map(post => (
+              {paginatedPosts.length > 0 ? (
+                paginatedPosts.map(post => (
                   <PostCard
                     key={post.id}
                     post={post}
@@ -364,6 +381,22 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                       ? 'Chưa có bài viết đã tương tác nào.'
                       : 'Không tìm thấy bài viết nào phù hợp.'}
                   </p>
+                </div>
+              )}
+              {filteredPosts.length > postsPerPage && (
+                <div className="flex justify-center mt-6 gap-2">
+                  {Array.from({ length: Math.ceil(filteredPosts.length / postsPerPage) }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`px-3 py-1 rounded-md ${currentPage === i + 1
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -429,7 +462,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                   {topAuthors.map((a) => (
                     <div
                       key={a.id}
-                      onClick={() => navigate(`/profile/${a.id}`)}
+                      onClick={() => navigate(`/profile/${a.id}?role=${a.role}`)}
                       className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer transition"
                     >
                       <img
@@ -437,14 +470,14 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                         alt={a.name}
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/profile/${a.id}`);
+                          navigate(`/profile/${a.id}?role=${a.role}`);
                         }}
                         className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-80 transition"
                       />
                       <div
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/profile/${a.id}`);
+                          navigate(`/profile/${a.id}?role=${a.role}`);
                         }}
                       >
                         <p className="font-semibold text-gray-800 hover:text-indigo-600 transition">

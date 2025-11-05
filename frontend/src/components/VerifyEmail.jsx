@@ -6,18 +6,15 @@ const VerifyEmail = () => {
   const location = useLocation();
   const formData = location.state?.formData;
   const email = formData?.email;
-
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
 
   const handleVerify = async (e) => {
     e.preventDefault();
-
     if (!email) {
       setMessage("Không có email để xác thực!");
       return;
     }
-
     try {
       const res = await fetch("http://localhost:5000/auth/verify-otp", {
         method: "POST",
@@ -25,17 +22,14 @@ const VerifyEmail = () => {
         body: JSON.stringify({ email, code }),
       });
       const data = await res.json();
-
       if (data.success) {
         setMessage("Xác thực thành công! Tạo tài khoản...");
-
         const registerRes = await fetch("http://localhost:5000/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
         });
         const registerData = await registerRes.json();
-
         if (registerData.success) {
           alert("Đăng ký thành công! Vui lòng đăng nhập.");
           navigate("/login");
@@ -58,7 +52,6 @@ const VerifyEmail = () => {
           Mã 6 chữ số đã được gửi tới email:{" "}
           <strong>{email || "Không có email"}</strong>
         </p>
-
         <form onSubmit={handleVerify} className="space-y-4">
           <input
             type="text"
@@ -76,12 +69,10 @@ const VerifyEmail = () => {
             Xác thực
           </button>
         </form>
-
         {message && (
           <p
-            className={`text-center mt-4 text-sm ${
-              message.includes("✅") ? "text-green-600" : "text-red-500"
-            }`}
+            className={`text-center mt-4 text-sm ${message.includes("✅") ? "text-green-600" : "text-red-500"
+              }`}
           >
             {message}
           </p>

@@ -1,4 +1,5 @@
 "use strict";
+
 module.exports = {
   async up(q, S) {
     await q.createTable("Topic", {
@@ -9,7 +10,6 @@ module.exports = {
       collate: "utf8mb4_unicode_ci"
     });
   },
-
   async down(q) {
     await q.dropTable("Topic");
   }

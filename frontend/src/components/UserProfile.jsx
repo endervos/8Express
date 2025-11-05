@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
-import logo from '../Images/Logo.png';
+import logo from '../images/logo.png';
 
 const UserProfile = ({ userInfo, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -25,15 +25,17 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
   const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
-    const fetchUserPosts = async (viewedUserId, isSelf) => {
+    const fetchUserPosts = async (viewedUserId, isSelf, viewedRole) => {
       try {
         const statusParam = isSelf ? "all" : "Approved";
         const res = await axios.get(`http://localhost:5000/posts?status=${statusParam}`);
-
         if (res.data.success) {
-          const filtered = res.data.data.filter(
-            (p) => p.user_id === viewedUserId
-          );
+          const filtered = res.data.data.filter((p) => {
+            if (viewedRole === "admin") {
+              return p.admin_id === viewedUserId && p.authorRole === "admin";
+            }
+            return p.user_id === viewedUserId && p.authorRole === "user";
+          });
           setUserPosts(filtered);
         }
       } catch (err) {
@@ -48,22 +50,27 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
         navigate("/login");
         return;
       }
-
       try {
+        const params = new URLSearchParams(window.location.search);
+        const viewedRole = params.get("role") || userInfo.role || "user";
         const url = id
-          ? `http://localhost:5000/profile/${id}`
+          ? `http://localhost:5000/profile/${id}?role=${viewedRole}`
           : `http://localhost:5000/profile`;
-
         const res = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         if (res.data.success) {
           const u = res.data.user;
-
-          const self = !id || parseInt(id) === userInfo?.id;
+          const self =
+            (!id || parseInt(id) === userInfo?.id) &&
+            ((u.role || viewedRole) === userInfo?.role);
           setIsSelf(self);
-
+          const [followersRes, followingRes] = await Promise.all([
+            axios.get(`http://localhost:5000/follow/followers/${u.id}?role=${viewedRole}`),
+            axios.get(`http://localhost:5000/follow/following/${u.id}?role=${viewedRole}`)
+          ]);
+          const followersCount = followersRes.data?.count ?? (followersRes.data?.data?.length ?? 0);
+          const followingCount = followingRes.data?.count ?? (followingRes.data?.data?.length ?? 0);
           setProfileData({
             id: u.id,
             name: u.full_name,
@@ -77,50 +84,50 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
             joinDate: u.created_at
               ? new Date(u.created_at).toLocaleDateString("vi-VN")
               : "Không rõ",
-            followers: u.Followers?.length || 0,
-            following: u.Following?.length || 0,
+            followers: followersCount,
+            following: followingCount,
+            role: u.role || viewedRole,
           });
-
-          fetchUserPosts(u.id, self);
-          fetchSharedPosts(u.id);
-        } else {
-          console.warn("Phản hồi backend:", res.data);
+          fetchUserPosts(u.id, self, u.role);
+          fetchSharedPosts(u.id, u.role);
         }
       } catch (err) {
-        console.error(
-          "Lỗi tải thông tin người dùng:",
-          err.response?.data || err.message
-        );
+        console.error("Lỗi tải thông tin người dùng:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchSharedPosts = async (userId) => {
+    const fetchSharedPosts = async (userId, role) => {
       try {
-        const res = await axios.get(`http://localhost:5000/share/${userId}`);
+        const res = await axios.get(`http://localhost:5000/share/${userId}?role=${role}`);
         if (res.data.success) setSharedPosts(res.data.data);
       } catch (err) {
         console.error("Lỗi tải bài viết chia sẻ:", err);
       }
     };
+    fetchProfile();
+  }, [userInfo, userInfo?.role, navigate, id]);
 
+  useEffect(() => {
+    if (!id || !userInfo?.id || !profileData?.role) return;
     const checkIfFollowing = async () => {
-      if (!id || !userInfo?.id) return;
       try {
-        const res = await axios.get(`http://localhost:5000/follow/followers/${id}`);
+        const res = await axios.get(
+          `http://localhost:5000/follow/followers/${id}?role=${profileData.role}`
+        );
         if (res.data.success) {
-          const is = res.data.data.some(f => f.id === userInfo.id);
+          const is = res.data.data.some(
+            (f) => f.id === userInfo.id && f.role === userInfo.role
+          );
           setIsFollowing(is);
         }
       } catch (err) {
         console.error("Lỗi kiểm tra trạng thái theo dõi:", err);
       }
     };
-
     checkIfFollowing();
-    fetchProfile();
-  }, [userInfo, navigate, id]);
+  }, [userInfo?.id, userInfo?.role, navigate, id, profileData?.role]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -138,7 +145,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
       alert('Mật khẩu xác nhận không khớp!');
       return;
     }
-
     try {
       const token = localStorage.getItem('token');
       const payload = {
@@ -152,13 +158,11 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
           ? profileData.avatar
           : undefined,
       };
-
       const res = await axios.put(
         `http://localhost:5000/profile/${profileData.id}`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       if (res.data.success) {
         alert('Cập nhật thành công!');
         setIsEditing(false);
@@ -201,7 +205,9 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
 
   const fetchFollowList = async (type) => {
     try {
-      const res = await axios.get(`http://localhost:5000/follow/${type}/${profileData.id}`);
+      const res = await axios.get(
+        `http://localhost:5000/follow/${type}/${profileData.id}?role=${profileData.role}`
+      );
       if (res.data.success) {
         setListData(res.data.data);
         setShowList(type);
@@ -261,8 +267,13 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
               </div>
 
               {/* Name */}
-              <div className="flex-1 md:ml-6 mt-4 md:mt-0">
+              <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold text-gray-900">{profileData.name}</h1>
+                {profileData.role === "admin" && (
+                  <span className="px-3 py-1 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full border border-yellow-300">
+                    Quản trị viên
+                  </span>
+                )}
               </div>
 
               {/* Edit Button */}
@@ -299,25 +310,31 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       }
                       try {
                         if (isFollowing) {
-                          await axios.delete(`http://localhost:5000/follow/${profileData.id}`, {
-                            headers: { Authorization: `Bearer ${token}` },
-                          });
-
+                          await axios.delete(
+                            `http://localhost:5000/follow/${profileData.id}?targetRole=${profileData.role}`,
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
                           setIsFollowing(false);
-                          setProfileData((prev) => ({
-                            ...prev,
-                            followers: Math.max((prev.followers || 1) - 1, 0),
-                          }));
                         } else {
-                          await axios.post(`http://localhost:5000/follow/${profileData.id}`, {}, {
-                            headers: { Authorization: `Bearer ${token}` },
-                          });
-
+                          await axios.post(
+                            `http://localhost:5000/follow/${profileData.id}?targetRole=${profileData.role}`,
+                            {},
+                            { headers: { Authorization: `Bearer ${token}` } }
+                          );
                           setIsFollowing(true);
+                        }
+                        try {
+                          const [followersRes, followingRes] = await Promise.all([
+                            axios.get(`http://localhost:5000/follow/followers/${profileData.id}?role=${profileData.role}`),
+                            axios.get(`http://localhost:5000/follow/following/${profileData.id}?role=${profileData.role}`),
+                          ]);
                           setProfileData((prev) => ({
                             ...prev,
-                            followers: (prev.followers || 0) + 1,
+                            followers: followersRes.data?.count ?? (followersRes.data?.data?.length ?? 0),
+                            following: followingRes.data?.count ?? (followingRes.data?.data?.length ?? 0),
                           }));
+                        } catch (err) {
+                          console.error("Không thể đồng bộ lại follower count:", err);
                         }
                       } catch (err) {
                         console.error("Lỗi khi theo dõi/hủy theo dõi:", err);
@@ -372,7 +389,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                     <X size={20} />
                   </button>
                 </div>
-
                 {listData.length === 0 ? (
                   <p className="p-4 text-center text-gray-500">Chưa có dữ liệu</p>
                 ) : (
@@ -382,7 +398,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                         key={user.id}
                         onClick={() => {
                           setShowList(null);
-                          navigate(`/profile/${user.id}`);
+                          navigate(`/profile/${user.id}?role=${user.role}`);
                         }}
                         className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition"
                       >
@@ -396,7 +412,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowList(null);
-                            navigate(`/profile/${user.id}`);
+                            navigate(`/profile/${user.id}?role=${user.role}`);
                           }}
                           className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-80 transition"
                         />
@@ -404,7 +420,7 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowList(null);
-                            navigate(`/profile/${user.id}`);
+                            navigate(`/profile/${user.id}?role=${user.role}`);
                           }}
                           className="flex-1"
                         >
@@ -465,7 +481,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
               const hasImage = post.image && post.image.startsWith("data:image");
               const hasVideo = post.video && post.video.startsWith("data:video");
               const hasAudio = post.audio && post.audio.startsWith("data:audio");
-
               return (
                 <div
                   key={post.id}
@@ -536,12 +551,10 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                               </span>
                             ))}
                       </div>
-
                       {/* Bình luận */}
                       <span className="flex items-center gap-1">
                         <MessageSquare size={14} /> {post.comments || 0}
                       </span>
-
                       {/* Chia sẻ */}
                       <span className="flex items-center gap-1">
                         <Share size={14} /> {post.shareCount || 0}
@@ -563,7 +576,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                 const hasImage = post.image && post.image.startsWith("data:image");
                 const hasVideo = post.video && post.video.startsWith("data:video");
                 const hasAudio = post.audio && post.audio.startsWith("data:audio");
-
                 return (
                   <div
                     key={post.id}
@@ -608,7 +620,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                         </span>
                       </div>
                     )}
-
                     {/* Nội dung bài viết */}
                     <div className="p-4">
                       <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition whitespace-pre-line">
@@ -623,7 +634,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
                         {post.body}
                       </p>
-
                       {/* Ngày chia sẻ */}
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
                         <span className="italic text-indigo-600">
@@ -641,7 +651,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
               Thông tin cá nhân
             </h3>
-
             <div className="space-y-6">
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
@@ -660,7 +669,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.name}</p>
                 )}
               </div>
-
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Phone size={16} />
@@ -679,7 +687,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.phone}</p>
                 )}
               </div>
-
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <User size={16} />
@@ -700,7 +707,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.gender}</p>
                 )}
               </div>
-
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Calendar size={16} />
@@ -718,7 +724,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   <p className="px-4 py-3 bg-gray-50 rounded-lg text-gray-900">{profileData.birthDate}</p>
                 )}
               </div>
-
               {isEditing && (
                 <>
                   <div>
@@ -747,7 +752,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
-
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                       <Lock size={16} />
@@ -763,7 +767,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   </div>
                 </>
               )}
-
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Mail size={16} />
@@ -773,7 +776,6 @@ const UserProfile = ({ userInfo, onUpdateUser }) => {
                   {profileData.email}
                 </p>
               </div>
-
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
                   <Calendar size={16} />
