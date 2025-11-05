@@ -450,13 +450,29 @@ router.get("/:postId/comments", async (req, res) => {
 router.get("/interacted/:userId", async (req, res) => {
   try {
     const userId = parseInt(req.params.userId);
+    const roleParam = req.query.role?.toLowerCase();
     if (isNaN(userId)) {
       return res.status(400).json({ success: false, message: "ID không hợp lệ" });
     }
+    let role = roleParam;
+    if (!role) {
+      const [isUser, isAdmin] = await Promise.all([
+        User.findByPk(userId, { attributes: ["id"] }),
+        Admin.findByPk(userId, { attributes: ["id"] }),
+      ]);
+      if (isAdmin) role = "admin";
+      else if (isUser) role = "user";
+      else {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy người dùng hoặc quản trị viên.",
+        });
+      }
+    }
+    const reactionWhere = role === "admin" ? { admin_id: userId } : { user_id: userId };
+    const commentColumn = role === "admin" ? "c.admin_id" : "c.user_id";
     const reactedPosts = await sequelize.models.PostReaction.findAll({
-      where: {
-        [Sequelize.Op.or]: [{ user_id: userId }, { admin_id: userId }],
-      },
+      where: reactionWhere,
       include: [
         {
           model: sequelize.models.Post,
@@ -475,12 +491,14 @@ router.get("/interacted/:userId", async (req, res) => {
       SELECT DISTINCT p.*
       FROM Post p
       JOIN Comment c ON c.post_id = p.id
-      WHERE c.user_id = ?
+      WHERE ${commentColumn} = ?
       `,
       { replacements: [userId], type: Sequelize.QueryTypes.SELECT }
     );
     const reactionIcons = await Reaction.findAll({ attributes: ["name", "icon"] });
-    const reactionMap = Object.fromEntries(reactionIcons.map(r => [r.name.toLowerCase(), r.icon]));
+    const reactionMap = Object.fromEntries(
+      reactionIcons.map((r) => [r.name.toLowerCase(), r.icon])
+    );
     const toDataUrl = (buf, mime) =>
       buf && Buffer.isBuffer(buf)
         ? `data:${mime};base64,${buf.toString("base64")}`
@@ -489,14 +507,16 @@ router.get("/interacted/:userId", async (req, res) => {
     for (const r of reactedPosts) {
       const p = r.Post;
       if (!p) continue;
-      const [commentCount] = await sequelize.query(
-        "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
-        { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
-      );
-      const [shareCount] = await sequelize.query(
-        "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
-        { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
-      );
+      const [[commentCount], [shareCount]] = await Promise.all([
+        sequelize.query("SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?", {
+          replacements: [p.id],
+          type: Sequelize.QueryTypes.SELECT,
+        }),
+        sequelize.query("SELECT COUNT(*) AS c FROM Share WHERE post_id = ?", {
+          replacements: [p.id],
+          type: Sequelize.QueryTypes.SELECT,
+        }),
+      ]);
       const reactions = [
         { icon: reactionMap.like || "👍", count: p.like_count },
         { icon: reactionMap.love || "❤️", count: p.love_count },
@@ -507,8 +527,8 @@ router.get("/interacted/:userId", async (req, res) => {
       ];
       const isAdminPost = p.user_id == null && p.admin_id != null;
       const authorName = isAdminPost
-        ? (p.Admin?.full_name || "Ẩn danh (Admin)")
-        : (p.User?.full_name || "Ẩn danh (User)");
+        ? p.Admin?.full_name || "Ẩn danh (Admin)"
+        : p.User?.full_name || "Ẩn danh (User)";
       const authorRole = isAdminPost ? "admin" : "user";
       postMap.set(p.id, {
         id: p.id,
@@ -517,7 +537,7 @@ router.get("/interacted/:userId", async (req, res) => {
         title: p.title,
         body: p.body || "",
         author: authorName,
-        authorRole: authorRole,
+        authorRole,
         category: p.Topic?.name || "Chưa phân loại",
         image: toDataUrl(p.image, "image/jpeg"),
         video: toDataUrl(p.video, "video/mp4"),
@@ -533,17 +553,19 @@ router.get("/interacted/:userId", async (req, res) => {
     }
     for (const p of commentedPosts) {
       if (!postMap.has(p.id)) {
-        const user = await User.findByPk(p.user_id);
-        const admin = await Admin.findByPk(p.admin_id);
-        const topic = await Topic.findByPk(p.topic_id);
-        const [commentCount] = await sequelize.query(
-          "SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?",
-          { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
-        );
-        const [shareCount] = await sequelize.query(
-          "SELECT COUNT(*) AS c FROM Share WHERE post_id = ?",
-          { replacements: [p.id], type: Sequelize.QueryTypes.SELECT }
-        );
+        const [user, admin, topic, [commentCount], [shareCount]] = await Promise.all([
+          User.findByPk(p.user_id),
+          Admin.findByPk(p.admin_id),
+          Topic.findByPk(p.topic_id),
+          sequelize.query("SELECT COUNT(*) AS c FROM Comment WHERE post_id = ?", {
+            replacements: [p.id],
+            type: Sequelize.QueryTypes.SELECT,
+          }),
+          sequelize.query("SELECT COUNT(*) AS c FROM Share WHERE post_id = ?", {
+            replacements: [p.id],
+            type: Sequelize.QueryTypes.SELECT,
+          }),
+        ]);
         const reactions = [
           { icon: reactionMap.like || "👍", count: p.like_count },
           { icon: reactionMap.love || "❤️", count: p.love_count },
@@ -554,8 +576,8 @@ router.get("/interacted/:userId", async (req, res) => {
         ];
         const isAdminPost = p.user_id == null && p.admin_id != null;
         const authorName = isAdminPost
-          ? (admin?.full_name || "Ẩn danh (Admin)")
-          : (user?.full_name || "Ẩn danh (User)");
+          ? admin?.full_name || "Ẩn danh (Admin)"
+          : user?.full_name || "Ẩn danh (User)";
         const authorRole = isAdminPost ? "admin" : "user";
         postMap.set(p.id, {
           id: p.id,
@@ -564,7 +586,7 @@ router.get("/interacted/:userId", async (req, res) => {
           title: p.title,
           body: p.body || "",
           author: authorName,
-          authorRole: authorRole,
+          authorRole,
           category: topic?.name || "Chưa phân loại",
           image: toDataUrl(p.image, "image/jpeg"),
           video: toDataUrl(p.video, "video/mp4"),
@@ -579,8 +601,10 @@ router.get("/interacted/:userId", async (req, res) => {
         });
       }
     }
-    const data = Array.from(postMap.values());
-    res.json({ success: true, data });
+    const data = Array.from(postMap.values()).sort(
+      (a, b) => new Date(b.publishedAt) - new Date(a.publishedAt)
+    );
+    res.json({ success: true, role, data });
   } catch (err) {
     console.error("GET /posts/interacted/:userId", err);
     res.status(500).json({

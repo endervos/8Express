@@ -115,7 +115,9 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
     const fetchInteracted = async () => {
       if (!isLoggedIn || !userInfo?.id) return;
       try {
-        const res = await axios.get(`http://localhost:5000/posts/interacted/${userInfo.id}`);
+        const res = await axios.get(
+          `http://localhost:5000/posts/interacted/${userInfo.id}?role=${userInfo.role}`
+        );
         if (res.data.success) {
           const approved = res.data.data.filter(p => p.status === "Approved");
           setInteracted(approved);

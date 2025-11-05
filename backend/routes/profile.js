@@ -68,23 +68,17 @@ router.put("/:id", async (req, res) => {
     const authHeader = req.headers.authorization;
     if (!authHeader)
       return res.status(401).json({ success: false, message: "Thiếu token" });
-
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET);
     const { id: tokenId, role: tokenRole } = decoded;
     const targetId = parseInt(req.params.id);
-
-    // ✅ CHỐT AN TOÀN: chỉ cho phép sửa chính mình (theo ID + role)
     if (tokenId !== targetId) {
       return res.status(403).json({
         success: false,
         message: "Bạn không có quyền chỉnh sửa hồ sơ của người khác.",
       });
     }
-
-    // ✅ Không dùng req.query.role, chỉ dùng role trong token
     const Model = tokenRole === "admin" ? Admin : User;
-
     const account = await Model.findByPk(tokenId);
     if (!account) {
       return res.status(404).json({
@@ -92,7 +86,6 @@ router.put("/:id", async (req, res) => {
         message: "Không tìm thấy tài khoản.",
       });
     }
-
     const {
       full_name,
       password,
@@ -102,8 +95,6 @@ router.put("/:id", async (req, res) => {
       phone,
       avatar,
     } = req.body;
-
-    // ✅ Xử lý đổi mật khẩu
     if (password) {
       if (!currentPassword) {
         return res.status(400).json({
@@ -111,7 +102,6 @@ router.put("/:id", async (req, res) => {
           message: "Cần nhập mật khẩu hiện tại để đổi mật khẩu.",
         });
       }
-
       const match = await bcrypt.compare(currentPassword, account.password);
       if (!match) {
         return res.status(401).json({
@@ -122,8 +112,6 @@ router.put("/:id", async (req, res) => {
 
       account.password = await bcrypt.hash(password, 10);
     }
-
-    // ✅ Cập nhật thông tin khác
     if (full_name) account.full_name = full_name;
     if (gender) account.gender = gender;
     if (date_of_birth) account.date_of_birth = date_of_birth;
@@ -132,7 +120,6 @@ router.put("/:id", async (req, res) => {
       const base64Data = avatar.split(",")[1];
       account.avatar = Buffer.from(base64Data, "base64");
     }
-
     await account.save();
     res.json({ success: true, message: "Cập nhật hồ sơ thành công." });
   } catch (err) {
@@ -284,8 +271,6 @@ router.get("/:id", async (req, res) => {
         message: "Không tìm thấy người dùng hoặc quản trị viên.",
       });
     }
-    let followersCount = 0;
-    let followingCount = 0;
     try {
       followersCount = await Follow.count({
         where: role === "user"
