@@ -68,9 +68,9 @@ VALUES
  NULL, NULL, LOAD_FILE('/images/post3.mp4'),
  1, 1, 1, 1, 1, 1, 'Approved', NOW()),
 
-(NULL, 1, 3, 
- 'Sử dụng công nghệ cho lập trình Web', 
- 'Framework: frontend React, backend ExpressJS và database Sequelize',
+(NULL, 1, 1, 
+ 'Các công nghệ hiện đại cho lập trình Web', 
+ 'Frontend React, Backend ExpressJS và Database Sequelize',
  NULL, NULL, NULL,
  0, 0, 0, 0, 0, 0, 'Approved', NOW());
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Image, Eye, Send, BookOpen, Video, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

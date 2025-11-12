@@ -92,7 +92,7 @@ router.get("/:id", async (req, res) => {
         id: p.id,
         title: p.title,
         body: p.body,
-        category: p.Topic?.name || "Chưa phân loại",
+        topic: p.Topic?.name || "Chưa phân loại",
         author,
         authorAvatar,
         image: p.image

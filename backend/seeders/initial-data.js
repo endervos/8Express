@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  async up(queryInterface) {
     // Avatar
     const avatarAdmin = fs.readFileSync(path.join(__dirname, "images/avatar-admin.jpg"));
     const avatar1 = fs.readFileSync(path.join(__dirname, "images/avatar1.jpeg"));
@@ -183,9 +183,9 @@ module.exports = {
       {
         user_id: null,
         admin_id: 1,
-        topic_id: 3,
-        title: "Sử dụng công nghệ cho lập trình Web",
-        body: "Framework: frontend React, backend ExpressJS và database Sequelize",
+        topic_id: 1,
+        title: "Các công nghệ hiện đại cho lập trình Web",
+        body: "Frontend React, Backend ExpressJS và Database Sequelize",
         image: null,
         audio: null,
         video: null,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Ban, Eye, X, CheckCircle, MessageSquare, Share } from 'lucide-react';
 import axios from "axios";
 
@@ -110,8 +110,8 @@ const PostsManagement = () => {
     <div>
       <div className="bg-white rounded-xl shadow-md">
         <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="relative w-full sm:max-w-md">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 size={20}
@@ -127,7 +127,7 @@ const PostsManagement = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
-            <div className="relative w-full sm:max-w-md">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 size={20}
@@ -144,7 +144,7 @@ const PostsManagement = () => {
               />
             </div>
 
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-2 items-center shrink-0">
               <select
                 value={filterStatus}
                 onChange={(e) => {
@@ -159,6 +159,12 @@ const PostsManagement = () => {
                 <option value="Hidden">Đã ẩn</option>
                 <option value="Banned">Bị cấm</option>
               </select>
+              <button
+                onClick={() => alert('AI đang duyệt bài viết...')}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition"
+              >
+                Duyệt bài viết bằng AI
+              </button>
             </div>
           </div>
         </div>
@@ -193,7 +199,7 @@ const PostsManagement = () => {
                           {post.title}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {post.category}
+                          {post.topic}
                         </div>
                       </div>
                     </td>
@@ -248,7 +254,7 @@ const PostsManagement = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        {post.status === 'Pending' && (
+                        {(post.status === 'Pending' || post.status === 'Banned') && (
                           <button
                             onClick={() => handleApprove(post.id)}
                             className="p-2 text-green-600 hover:bg-green-50 rounded transition"
@@ -257,13 +263,15 @@ const PostsManagement = () => {
                             <CheckCircle size={16} />
                           </button>
                         )}
-                        <button
-                          onClick={() => handleBan(post.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                          title="Cấm bài viết"
-                        >
-                          <Ban size={16} />
-                        </button>
+                        {post.status !== 'Banned' && (
+                          <button
+                            onClick={() => handleBan(post.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                            title="Cấm bài viết"
+                          >
+                            <Ban size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -331,21 +339,8 @@ const PostsManagement = () => {
               </button>
             </div>
             <div className="p-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{selectedPost.title}</h1>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                <span>
-                  <strong>{selectedPost.author}</strong>
-                </span>
-                {selectedPost.authorEmail && (
-                  <>
-                    <span>•</span>
-                    <span className="text-gray-500">{selectedPost.authorEmail}</span>
-                  </>
-                )}
-                <span>•</span>
-                <span>{selectedPost.createdAt}</span>
-              </div>
-              <div className="flex items-center gap-2 mb-6">
+              <div className="flex flex-wrap items-center justify-between mb-4">
+                <h1 className="text-3xl font-bold text-gray-900">{selectedPost.title}</h1>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-medium ${selectedPost.status === 'Approved'
                     ? 'bg-green-100 text-green-700'
@@ -368,8 +363,23 @@ const PostsManagement = () => {
                           ? 'Bị cấm'
                           : selectedPost.status}
                 </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+                <span>
+                  <strong>{selectedPost.author}</strong>
+                </span>
+                {selectedPost.authorEmail && (
+                  <>
+                    <span>•</span>
+                    <span className="text-gray-500">{selectedPost.authorEmail}</span>
+                  </>
+                )}
+                <span>•</span>
+                <span>{selectedPost.createdAt}</span>
+              </div>
+              <div className="flex items-center gap-2 mb-6">
                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                  {selectedPost.category}
+                  {selectedPost.topic}
                 </span>
               </div>
               <div className="prose max-w-none text-gray-700 whitespace-pre-wrap mb-6">

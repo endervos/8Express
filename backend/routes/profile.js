@@ -109,7 +109,6 @@ router.put("/:id", async (req, res) => {
           message: "Mật khẩu hiện tại không đúng.",
         });
       }
-
       account.password = await bcrypt.hash(password, 10);
     }
     if (full_name) account.full_name = full_name;
@@ -235,6 +234,7 @@ router.get("/:id", async (req, res) => {
           "date_of_birth",
           "avatar",
           "created_at",
+          "is_banned",
         ],
         include: [
           {
@@ -300,6 +300,7 @@ router.get("/:id", async (req, res) => {
         ? new Date(account.created_at).toISOString()
         : account.dataValues?.created_at || null,
       role,
+      is_banned: account.is_banned || false,
       Followers:
         account.Followers?.map((f) => ({
           id: f.id,

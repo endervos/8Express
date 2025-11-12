@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, MessageSquare, Share, MoreVertical } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import logo from "../images/logo.png";
@@ -174,7 +174,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
           {/* Topic */}
           <div className="px-8 pt-6 flex justify-between items-start relative">
             <span className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
-              {post.category}
+              {post.topic}
             </span>
             {isOwner && (
               <div className="relative menu-wrapper">
@@ -324,7 +324,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
             ) : (
               <h1 className="text-4xl font-bold text-gray-900 mb-3">{post.title}</h1>
             )}
-
             {isOwner && (
               <span
                 className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${post.status === "Approved"
@@ -333,10 +332,20 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     ? "bg-yellow-100 text-yellow-700"
                     : post.status === "Hidden"
                       ? "bg-gray-200 text-gray-700"
-                      : "bg-red-100 text-red-700"
+                      : post.status === "Banned"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
                   }`}
               >
-                Trạng thái: {post.status}
+                {post.status === "Approved"
+                  ? "Đã duyệt"
+                  : post.status === "Pending"
+                    ? "Chờ phê duyệt"
+                    : post.status === "Hidden"
+                      ? "Đã ẩn"
+                      : post.status === "Banned"
+                        ? "Bị cấm"
+                        : post.status}
               </span>
             )}
           </div>

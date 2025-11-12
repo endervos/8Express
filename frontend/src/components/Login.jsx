@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 
@@ -19,16 +19,13 @@ const Login = ({ onLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     try {
       const res = await fetch("http://localhost:5000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       const data = await res.json();
-
       if (data.success) {
         localStorage.setItem("token", data.token);
         onLogin(data.user);
@@ -37,6 +34,8 @@ const Login = ({ onLogin }) => {
         } else {
           navigate("/");
         }
+      } else {
+        setError(data.message || "Đăng nhập thất bại. Vui lòng thử lại.");
       }
     } catch (err) {
       console.error("Lỗi kết nối tới server:", err);

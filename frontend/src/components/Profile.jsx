@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   User, Mail, Lock, Calendar, Edit2, Save, X,
   Camera, FileText, MessageSquare, Settings, Phone, Share
@@ -87,6 +87,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
             followers: followersCount,
             following: followingCount,
             role: u.role || viewedRole,
+            is_banned: u.is_banned || false,
           });
           fetchUserPosts(u.id, self, u.role);
           fetchSharedPosts(u.id, u.role);
@@ -272,6 +273,11 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                 {profileData.role === "admin" && (
                   <span className="px-3 py-1 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full border border-yellow-300">
                     Quản trị viên
+                  </span>
+                )}
+                {profileData.role === "user" && profileData.is_banned && (
+                  <span className="px-3 py-1 text-sm font-semibold bg-red-100 text-red-700 rounded-full border border-red-300">
+                    Bị cấm
                   </span>
                 )}
               </div>
@@ -496,7 +502,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       />
                       <div className="absolute top-3 left-3">
                         <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                          {post.category}
+                          {post.topic}
                         </span>
                       </div>
                     </div>
@@ -505,7 +511,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       <video src={post.video} controls className="w-full h-full object-cover" />
                       <div className="absolute top-3 left-3">
                         <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                          {post.category}
+                          {post.topic}
                         </span>
                       </div>
                     </div>
@@ -513,7 +519,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                     <div className="relative p-4 bg-gray-50 border-b border-gray-100">
                       <div className="absolute top-3 left-3">
                         <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                          {post.category}
+                          {post.topic}
                         </span>
                       </div>
                       <audio controls className="w-full mt-6" src={post.audio} />
@@ -521,7 +527,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                   ) : (
                     <div className="p-4">
                       <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
-                        {post.category}
+                        {post.topic}
                       </span>
                     </div>
                   )}
@@ -591,7 +597,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                         />
                         <div className="absolute top-3 left-3">
                           <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                            {post.category}
+                            {post.topic}
                           </span>
                         </div>
                       </div>
@@ -600,7 +606,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                         <video src={post.video} controls className="w-full h-full object-cover" />
                         <div className="absolute top-3 left-3">
                           <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                            {post.category}
+                            {post.topic}
                           </span>
                         </div>
                       </div>
@@ -608,7 +614,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       <div className="relative p-4 bg-gray-50 border-b border-gray-100">
                         <div className="absolute top-3 left-3">
                           <span className="px-3 py-1 bg-black bg-opacity-70 text-white text-xs font-medium rounded-full">
-                            {post.category}
+                            {post.topic}
                           </span>
                         </div>
                         <audio controls className="w-full mt-6" src={post.audio} />
@@ -616,7 +622,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                     ) : (
                       <div className="p-4">
                         <span className="inline-block px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full">
-                          {post.category}
+                          {post.topic}
                         </span>
                       </div>
                     )}

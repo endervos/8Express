@@ -104,6 +104,11 @@ router.post("/login", async (req, res) => {
     let account = null;
     let role = "";
     if (user) {
+      if (user.is_banned) {
+        return res
+          .status(403)
+          .json({ success: false, message: "Tài khoản của bạn đã bị cấm." });
+      }
       const match = await bcrypt.compare(password, user.password);
       if (!match)
         return res

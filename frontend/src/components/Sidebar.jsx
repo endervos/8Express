@@ -1,4 +1,3 @@
-import React from 'react';
 import { BarChart3, Users, FileText, LogOut, Home } from 'lucide-react';
 
 const Sidebar = ({ activeTab, setActiveTab, onLogout, onGoHome }) => {
