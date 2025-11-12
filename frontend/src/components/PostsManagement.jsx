@@ -160,7 +160,53 @@ const PostsManagement = () => {
                 <option value="Banned">Bị cấm</option>
               </select>
               <button
-                onClick={() => alert('AI đang duyệt bài viết...')}
+                onClick={async () => {
+                  if (window.confirm("Bạn có muốn AI tự động duyệt tất cả bài viết đang chờ duyệt không?")) {
+                    try {
+                      const pendingPosts = posts.filter(p => p.status === "Pending");
+                      if (pendingPosts.length === 0) {
+                        alert("Không có bài viết nào đang chờ phê duyệt.");
+                        return;
+                      }
+                      const res = await axios.post(`${API_BASE}/admin/ai/review-posts`, {
+                        posts: posts
+                          .filter(p => p.status === "Pending")
+                          .map(p => ({
+                            id: p.id,
+                            title: p.title,
+                            body: p.body || "",
+                          })),
+                      }, {
+                        headers: {
+                          Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        },
+                      });
+                      if (res.data.success) {
+                        const { approvedCount, bannedCount, bannedPosts } = res.data.summary;
+                        let msg = `AI đã duyệt ${approvedCount + bannedCount} bài.\n` +
+                          `${approvedCount} bài hợp lệ.\n` +
+                          `${bannedCount} bài vi phạm.`;
+                        if (bannedPosts.length > 0) {
+                          msg += "\n\nCác bài vi phạm:\n";
+                          bannedPosts.forEach(bp => {
+                            msg += `• ${bp.title} → từ khóa: ${bp.keywords.join(", ") || "Không xác định"}\n`;
+                          });
+                        }
+                        alert(msg);
+                        setPosts(posts.map(p => {
+                          const bp = bannedPosts.find(x => x.id === p.id);
+                          if (bp) return { ...p, status: "Banned" };
+                          return { ...p, status: "Approved" };
+                        }));
+                      } else {
+                        alert("AI duyệt bài viết thất bại.");
+                      }
+                    } catch (err) {
+                      alert("AI duyệt bài viết thất bại!");
+                      console.error(err);
+                    }
+                  }
+                }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition"
               >
                 Duyệt bài viết bằng AI

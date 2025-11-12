@@ -3,6 +3,8 @@ const router = express.Router();
 const { Sequelize, User, Admin, Post, Topic, Reaction } = require("../models");
 const dayjs = require("dayjs");
 const jwt = require("jsonwebtoken");
+const { spawn } = require("child_process");
+const path = require("path");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -531,6 +533,80 @@ router.post("/posts/:id/status", async (req, res) => {
     } catch (err) {
         console.error("Lỗi khi cập nhật trạng thái bài viết:", err);
         res.status(500).json({ success: false, message: "Lỗi server khi cập nhật trạng thái bài viết" });
+    }
+});
+
+
+router.post("/ai/review-posts", async (req, res) => {
+    try {
+        const { posts } = req.body;
+        const authHeader = req.headers.authorization;
+        if (!authHeader)
+            return res.status(401).json({ success: false, message: "Thiếu token" });
+        const token = authHeader.split(" ")[1];
+        let decoded;
+        try {
+            decoded = jwt.verify(token, JWT_SECRET);
+        } catch (err) {
+            return res.status(403).json({ success: false, message: "Token không hợp lệ" });
+        }
+        if (decoded.role !== "admin") {
+            return res.status(403).json({ success: false, message: "Bạn không có quyền duyệt bài bằng AI" });
+        }
+        if (!posts || !Array.isArray(posts) || posts.length === 0)
+            return res.status(400).json({ success: false, message: "Thiếu dữ liệu bài viết." });
+        const scriptPath = path.join(__dirname, "../ai/review_posts.py");
+        let approvedCount = 0;
+        let bannedCount = 0;
+        let bannedPosts = [];
+        for (const post of posts) {
+            const py = spawn("python", [scriptPath]);
+            let output = "";
+            const inputData = JSON.stringify({ title: post.title, body: post.body });
+            const resultPromise = new Promise((resolve, reject) => {
+                py.stdout.on("data", (data) => (output += data.toString()));
+                py.stderr.on("data", (data) => console.error("AI error:", data.toString()));
+                py.on("close", () => {
+                    try {
+                        const result = JSON.parse(output);
+                        resolve(result);
+                    } catch (err) {
+                        reject(err);
+                    }
+                });
+            });
+            py.stdin.write(inputData);
+            py.stdin.end();
+            const result = await resultPromise;
+            const { label, keywords } = result;
+            const newStatus = label === "vi_pham" ? "Banned" : "Approved";
+            const postRecord = await Post.findByPk(post.id);
+            if (postRecord) {
+                postRecord.status = newStatus;
+                postRecord.admin_id = decoded.id;
+                await postRecord.save();
+            }
+            if (newStatus === "Approved") approvedCount++;
+            else {
+                bannedCount++;
+                bannedPosts.push({
+                    id: post.id,
+                    title: post.title,
+                    keywords,
+                });
+            }
+        }
+        res.json({
+            success: true,
+            message: `AI đã duyệt ${approvedCount + bannedCount} bài viết (${approvedCount} hợp lệ, ${bannedCount} vi phạm)`,
+            summary: { approvedCount, bannedCount, bannedPosts },
+        });
+    } catch (err) {
+        console.error("Lỗi khi chạy AI:", err);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi khi chạy AI duyệt bài viết.",
+        });
     }
 });
 
