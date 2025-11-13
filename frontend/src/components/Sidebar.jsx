@@ -9,15 +9,11 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, onGoHome }) => {
 
   return (
     <div className="fixed left-0 top-0 h-full w-64 bg-gray-900 text-white z-50">
-      {/* Logo & Title */}
       <div className="p-6 border-b border-gray-800">
         <h1 className="text-3xl text-center font-bold">Quản Trị Viên</h1>
         <p className="text-gray-400 text-center text-sm mt-1">8Express</p>
       </div>
-
-      {/* Navigation Menu */}
       <nav className="mt-6">
-        {/* Nút VỀ TRANG CHỦ */}
         <button
           onClick={onGoHome}
           className="w-full flex items-center gap-3 px-6 py-3 transition hover:bg-gray-800 bg-gray-700 text-indigo-400"
@@ -25,19 +21,16 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, onGoHome }) => {
           <Home size={20} />
           <span className="font-medium">Về Trang Chủ</span>
         </button>
-
-        {/* Menu Items */}
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-6 py-3 transition ${
-                activeTab === item.id 
-                  ? 'bg-indigo-600 border-r-4 border-indigo-400' 
+              className={`w-full flex items-center gap-3 px-6 py-3 transition ${activeTab === item.id
+                  ? 'bg-indigo-600 border-r-4 border-indigo-400'
                   : 'hover:bg-gray-800'
-              }`}
+                }`}
             >
               <Icon size={20} />
               <span className="font-medium">{item.label}</span>
@@ -45,8 +38,6 @@ const Sidebar = ({ activeTab, setActiveTab, onLogout, onGoHome }) => {
           );
         })}
       </nav>
-
-      {/* Logout Button */}
       <div className="absolute bottom-0 w-full p-4 border-t border-gray-800">
         <button
           onClick={onLogout}

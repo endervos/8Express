@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
 import logo from '../images/logo.png';
+import Dialog from "./Dialog";
 
 const Profile = ({ userInfo, onUpdateUser }) => {
   const navigate = useNavigate();
@@ -23,6 +24,18 @@ const Profile = ({ userInfo, onUpdateUser }) => {
   const [listData, setListData] = useState([]);
   const [sharedPosts, setSharedPosts] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+  const openDialog = (title, message, onConfirm = null) => {
+    setDialog({ open: true, title, message, onConfirm });
+  };
+  const closeDialog = () => {
+    setDialog({ open: false, title: "", message: "", onConfirm: null });
+  };
 
   useEffect(() => {
     const fetchUserPosts = async (viewedUserId, isSelf, viewedRole) => {
@@ -46,8 +59,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        alert("Bạn chưa đăng nhập.");
-        navigate("/login");
+        openDialog("Thông báo", "Bạn chưa đăng nhập.", () => navigate("/login"));
         return;
       }
       try {
@@ -143,7 +155,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
 
   const handleSaveProfile = async () => {
     if (newPassword && newPassword !== confirmPassword) {
-      alert('Mật khẩu xác nhận không khớp!');
+      openDialog("Lỗi", "Mật khẩu xác nhận không khớp!");
       return;
     }
     try {
@@ -165,18 +177,18 @@ const Profile = ({ userInfo, onUpdateUser }) => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (res.data.success) {
-        alert('Cập nhật thành công!');
+        openDialog("Thành công", "Cập nhật thành công!");
         setIsEditing(false);
         onUpdateUser({
           name: profileData.name,
           email: profileData.email,
         });
       } else {
-        alert('Không thể cập nhật thông tin.');
+        openDialog("Lỗi", "Không thể cập nhật thông tin.");
       }
     } catch (err) {
       console.error('Lỗi cập nhật thông tin:', err);
-      alert('Có lỗi khi cập nhật hồ sơ.');
+      openDialog("Lỗi", "Có lỗi khi cập nhật hồ sơ.");
     } finally {
       setNewPassword('');
       setConfirmPassword('');
@@ -220,7 +232,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -239,15 +250,11 @@ const Profile = ({ userInfo, onUpdateUser }) => {
           </div>
         </div>
       </header>
-
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Profile Header */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
           <div className="h-48 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-
           <div className="px-8 pb-8">
             <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 mb-6">
-              {/* Avatar */}
               <div className="relative">
                 <img
                   src={profileData.avatar}
@@ -266,8 +273,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                   </label>
                 )}
               </div>
-
-              {/* Name */}
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-bold text-gray-900">{profileData.name}</h1>
                 {profileData.role === "admin" && (
@@ -281,8 +286,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                   </span>
                 )}
               </div>
-
-              {/* Edit Button */}
               <div className="mt-4 md:mt-0">
                 {isSelf ? (
                   isEditing ? (
@@ -310,8 +313,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                     onClick={async () => {
                       const token = localStorage.getItem("token");
                       if (!token) {
-                        alert("Bạn cần đăng nhập để theo dõi người khác!");
-                        navigate("/login");
+                        openDialog("Thông báo", "Bạn cần đăng nhập để theo dõi người khác!", () => navigate("/login"));
                         return;
                       }
                       try {
@@ -344,7 +346,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                         }
                       } catch (err) {
                         console.error("Lỗi khi theo dõi/hủy theo dõi:", err);
-                        alert(err.response?.data?.message || "Lỗi khi thực hiện theo dõi");
+                        openDialog("Lỗi", err.response?.data?.message || "Lỗi khi thực hiện theo dõi");
                       }
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${isFollowing
@@ -357,8 +359,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                 )}
               </div>
             </div>
-
-            {/* Stats */}
             <div className="grid grid-cols-3 gap-4 py-4 border-y border-gray-200">
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{userPosts.length}</p>
@@ -380,7 +380,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
               </div>
             </div>
           </div>
-
           {showList && (
             <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
               <div className="bg-white rounded-xl shadow-xl w-96 max-h-[70vh] overflow-y-auto">
@@ -443,8 +442,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
             </div>
           )}
         </div>
-
-        {/* Tabs */}
         <div className="bg-white rounded-xl shadow-md mb-6">
           <div className="flex border-b border-gray-200">
             <button
@@ -479,8 +476,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
             </button>
           </div>
         </div>
-
-        {/* Content */}
         {activeTab === 'posts' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {userPosts.map(post => {
@@ -531,8 +526,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       </span>
                     </div>
                   )}
-
-                  {/* Nội dung */}
                   <div className="p-4">
                     <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition whitespace-pre-line">
                       {post.title}
@@ -545,7 +538,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       {post.body || ""}
                     </p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 pt-3 border-t border-gray-100">
-                      {/* Hiển thị cảm xúc */}
                       <div className="flex items-center gap-2 flex-wrap">
                         {post.reactions &&
                           post.reactions
@@ -557,11 +549,9 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                               </span>
                             ))}
                       </div>
-                      {/* Bình luận */}
                       <span className="flex items-center gap-1">
                         <MessageSquare size={14} /> {post.comments || 0}
                       </span>
-                      {/* Chia sẻ */}
                       <span className="flex items-center gap-1">
                         <Share size={14} /> {post.shareCount || 0}
                       </span>
@@ -626,7 +616,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                         </span>
                       </div>
                     )}
-                    {/* Nội dung bài viết */}
                     <div className="p-4">
                       <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition whitespace-pre-line">
                         {post.title}
@@ -640,7 +629,6 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       <p className="text-sm text-gray-600 mb-3 whitespace-pre-line">
                         {post.body}
                       </p>
-                      {/* Ngày chia sẻ */}
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
                         <span className="italic text-indigo-600">
                           Đã chia sẻ: {new Date(post.sharedAt).toLocaleString("vi-VN")}
@@ -795,6 +783,14 @@ const Profile = ({ userInfo, onUpdateUser }) => {
           </div>
         )}
       </div>
+      {dialog.open && (
+        <Dialog
+          title={dialog.title}
+          message={dialog.message}
+          onClose={closeDialog}
+          onConfirm={dialog.onConfirm}
+        />
+      )}
     </div>
   );
 };

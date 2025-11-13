@@ -23,10 +23,17 @@
 ### 🛠️ Quản trị viên:
 - Xem thống kê (tổng số người dùng, tổng số bài viết, các hoạt động gần đây, …)
 - Quản lý:
-  - Khách hàng
-  - Bài viết
+  - Người dùng:
+    + Xem thông tin người dùng
+    + Tìm kiếm người dùng
+    + Kích hoạt, vô hiệu hóa tài khoản người dùng
+  - Bài viết:
+    + Xem chi tiết bài viết
+    + Tìm kiếm bài viết
+    + Phê duyệt, cấm bài viết
+    + Duyệt bài viết tự động bằng AI
 
-### 👤 Khách hàng:
+### 👤 Người dùng:
 - Đăng ký và đăng nhập tài khoản
 - Xem trang cá nhân và chỉnh sửa trang cá nhân
 - Viết bài, xóa, sửa bài viết

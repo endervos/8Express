@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, MessageSquare, Share, MoreVertical } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import logo from "../images/logo.png";
+import Dialog from "./Dialog";
 
 const API_BASE = "http://localhost:5000";
 
@@ -34,6 +35,18 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
     video: false,
     audio: false,
   });
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+  const openDialog = (title, message, onConfirm = null) => {
+    setDialog({ open: true, title, message, onConfirm });
+  };
+  const closeDialog = () => {
+    setDialog({ open: false, title: "", message: "", onConfirm: null });
+  };
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -62,6 +75,25 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
     };
     fetchPost();
   }, [postId]);
+
+  const doDeletePost = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/posts/${postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const j = await res.json();
+      if (j.success) {
+        navigate(`/profile/${userInfo.id}`);
+      } else {
+        openDialog("Lỗi", j.message);
+      }
+    } catch (err) {
+      console.error("Lỗi xóa:", err);
+      openDialog("Lỗi", "Không thể xóa bài viết.");
+    }
+  };
 
   const fetchComments = useCallback(async () => {
     try {
@@ -150,7 +182,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto flex justify-between items-center px-4 py-4">
           <button
@@ -171,7 +202,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
       </header>
       <main className="max-w-5xl mx-auto px-4 py-8">
         <article className="bg-white rounded-xl shadow-sm overflow-hidden">
-          {/* Topic */}
           <div className="px-8 pt-6 flex justify-between items-start relative">
             <span className="inline-block px-4 py-1 bg-indigo-100 text-indigo-700 text-sm font-medium rounded-full">
               {post.topic}
@@ -215,9 +245,9 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                       onClick={async () => {
                         try {
                           const token = localStorage.getItem("token");
-                          if (!token) return alert("Bạn cần đăng nhập!");
+                          if (!token) return openDialog("Thông báo", "Bạn cần đăng nhập!");
                           if (post.status !== "Approved" && post.status !== "Hidden") {
-                            return alert("Chỉ bài viết đã được duyệt mới có thể ẩn hoặc hiển thị lại.");
+                            return openDialog("Thông báo", "Chỉ bài viết đã được duyệt mới có thể ẩn hoặc hiển thị lại.");
                           }
                           const newStatus = post.status === "Hidden" ? "Approved" : "Hidden";
                           const imageBase64 = await toBase64(editData.image);
@@ -256,18 +286,19 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                           });
                           const j = await res.json();
                           if (j.success) {
-                            alert(
+                            openDialog(
+                              "Thành công",
                               newStatus === "Hidden"
                                 ? "Bài viết đã được ẩn."
                                 : "Bài viết đã được hiển thị lại."
                             );
                             setPost({ ...post, status: newStatus });
                           } else {
-                            alert(j.message);
+                            openDialog("Thông báo", j.message);
                           }
                         } catch (err) {
                           console.error("Ẩn/hiện lỗi:", err);
-                          alert("Không thể thay đổi trạng thái bài viết.");
+                          openDialog("Lỗi", "Không thể thay đổi trạng thái bài viết.");
                         } finally {
                           setShowMenu(false);
                         }
@@ -282,25 +313,15 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     </button>
                     <button
                       onClick={async () => {
-                        if (!window.confirm("Bạn có chắc muốn xóa bài viết này?")) return;
-                        try {
-                          const token = localStorage.getItem("token");
-                          if (!token) return alert("Bạn cần đăng nhập!");
-                          const res = await fetch(`${API_BASE}/posts/${postId}`, {
-                            method: "DELETE",
-                            headers: { Authorization: `Bearer ${token}` },
-                          });
-                          const j = await res.json();
-                          if (j.success) {
-                            alert("Đã xóa bài viết.");
-                            navigate(`/profile/${userInfo.id}`);
-                          } else alert(j.message);
-                        } catch (err) {
-                          console.error("Lỗi xóa:", err);
-                          alert("Không thể xóa bài viết.");
-                        } finally {
-                          setShowMenu(false);
-                        }
+                        openDialog(
+                          "Xóa bài viết",
+                          "Bạn có chắc muốn xóa bài viết này không?",
+                          async () => {
+                            await doDeletePost();
+                            closeDialog();
+                          }
+                        );
+                        return;
                       }}
                       className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
                     >
@@ -311,8 +332,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </div>
             )}
           </div>
-
-          {/* Title */}
           <div className="px-8 py-6">
             {isEditing ? (
               <input
@@ -349,8 +368,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </span>
             )}
           </div>
-
-          {/* Author */}
           <div className="px-8 pb-6 border-b border-gray-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
@@ -383,8 +400,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </div>
             </div>
           </div>
-
-          {/* Media */}
           <div className="px-8 pt-6 space-y-4">
             {isEditing ? (
               <>
@@ -418,7 +433,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     </div>
                   )}
                 </div>
-
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <label className="font-medium text-gray-700">Video</label>
@@ -449,7 +463,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     </div>
                   )}
                 </div>
-
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <label className="font-medium text-gray-700">Âm thanh</label>
@@ -499,8 +512,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
               </>
             )}
           </div>
-
-          {/* Content */}
           <div className="px-8 py-8">
             {isEditing ? (
               <textarea
@@ -514,14 +525,13 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 {post.body}
               </div>
             )}
-
             {isEditing && (
               <div className="px-8 pb-8 flex gap-4 mt-6">
                 <button
                   onClick={async () => {
                     try {
                       const token = localStorage.getItem("token");
-                      if (!token) return alert("Bạn cần đăng nhập!");
+                      if (!token) return openDialog("Thông báo", "Bạn cần đăng nhập!");
                       const toBase64 = (file) =>
                         new Promise((resolve, reject) => {
                           if (!file) return resolve(null);
@@ -553,7 +563,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                       });
                       const j = await res.json();
                       if (j.success) {
-                        alert("Cập nhật bài viết thành công!");
+                        openDialog("Thành công", "Cập nhật bài viết thành công!");
                         const updatedRes = await fetch(`${API_BASE}/posts/${postId}`, {
                           headers: token ? { Authorization: `Bearer ${token}` } : {},
                         });
@@ -566,11 +576,11 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                         setIsEditing(false);
                         setDeleteFlags({ image: false, video: false, audio: false });
                       } else {
-                        alert(j.message);
+                        openDialog("Thông báo", j.message);
                       }
                     } catch (err) {
                       console.error("Lỗi lưu bài viết:", err);
-                      alert("Không thể lưu thay đổi.");
+                      openDialog("Lỗi", "Không thể lưu thay đổi.");
                     }
                   }}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
@@ -608,7 +618,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                       key={i}
                       onClick={async () => {
                         if (!isLoggedIn) {
-                          alert("Bạn cần đăng nhập để thả cảm xúc!");
+                          openDialog("Thông báo", "Bạn cần đăng nhập để thả cảm xúc!");
                           return;
                         }
                         try {
@@ -638,7 +648,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                             );
                             const newData = await updated.json();
                             setPost(newData.data);
-                          } else alert(j.message);
+                          } else openDialog("Lỗi", j.message);
                         } catch (err) {
                           console.error("Lỗi khi thả cảm xúc:", err);
                         }
@@ -689,7 +699,7 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                 title="Chia sẻ bài viết"
                 onClick={async () => {
                   if (!isLoggedIn) {
-                    alert("Bạn cần đăng nhập để chia sẻ bài viết!");
+                    openDialog("Thông báo", "Bạn cần đăng nhập để chia sẻ bài viết!");
                     return;
                   }
                   try {
@@ -704,13 +714,13 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
                     });
                     const j = await res.json();
                     if (j.success) {
-                      alert("Bài viết đã được chia sẻ lên trang cá nhân!");
+                      openDialog("Thành công", "Bài viết đã được chia sẻ thành công!");
                     } else {
-                      alert(`${j.message}`);
+                      openDialog("Lỗi", j.message);
                     }
                   } catch (err) {
                     console.error("Lỗi chia sẻ bài viết:", err);
-                    alert("Đã xảy ra lỗi khi chia sẻ bài viết!");
+                    openDialog("Lỗi", "Đã xảy ra lỗi khi chia sẻ bài viết!");
                   }
                 }}
               >
@@ -839,6 +849,14 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
             </div>
           </div>
         )}
+        {dialog.open && (
+          <Dialog
+            title={dialog.title}
+            message={dialog.message}
+            onClose={closeDialog}
+            onConfirm={dialog.onConfirm}
+          />
+        )}
       </main>
     </div>
   );
@@ -876,7 +894,6 @@ const CommentItem = ({
             <span className="text-xs text-gray-500">{comment.created_at}</span>
           </div>
           <p className="text-gray-700">{comment.body}</p>
-
           {isLoggedIn && (
             <button
               onClick={() => setReplyOpen(!replyOpen)}
@@ -885,7 +902,6 @@ const CommentItem = ({
               {replyOpen ? "Hủy" : "Trả lời"}
             </button>
           )}
-
           {replyOpen && (
             <div className="mt-3">
               <textarea
@@ -930,8 +946,6 @@ const CommentItem = ({
             </div>
           )}
         </div>
-
-        {/* Hiển thị reply con */}
         {comment.replies?.length > 0 && (
           <div className="mt-3 space-y-3">
             {comment.replies.map((child) => (

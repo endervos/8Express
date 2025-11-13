@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Ban, Eye, X, CheckCircle, MessageSquare, Share } from 'lucide-react';
 import axios from "axios";
+import Dialog from "./Dialog";
 
 const API_BASE = "http://localhost:5000";
 
@@ -18,6 +19,22 @@ const PostsManagement = () => {
   const [aiResult, setAiResult] = useState(null);
   const [aiPage, setAiPage] = useState(1);
   const aiPerPage = 5;
+  const [aiLoading, setAiLoading] = useState(false);
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+
+  const closeDialog = () => {
+    setDialog({
+      open: false,
+      title: "",
+      message: "",
+      onConfirm: null,
+    });
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -34,53 +51,131 @@ const PostsManagement = () => {
     fetchPosts();
   }, [currentPage, postsPerPage]);
 
-  const handleApprove = async (id) => {
-    if (window.confirm('Bạn có chắc muốn duyệt bài viết này?')) {
-      try {
-        const res = await axios.post(
-          `${API_BASE}/admin/posts/${id}/status`,
-          { status: "Approved" },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
-        if (res.data.success) {
-          setPosts(posts.map(post =>
-            post.id === id
-              ? { ...post, status: 'Approved' }
-              : post
-          ));
+  const handleApproveConfirm = async (id) => {
+    closeDialog();
+    try {
+      const res = await axios.post(
+        `${API_BASE}/admin/posts/${id}/status`,
+        { status: "Approved" },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
-      } catch (err) {
-        console.error("Lỗi khi duyệt bài viết:", err);
+      );
+      if (res.data.success) {
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === id ? { ...post, status: "Approved" } : post
+          )
+        );
       }
+    } catch (err) {
+      console.error("Lỗi khi duyệt bài viết:", err);
     }
   };
 
-  const handleBan = async (id) => {
-    if (window.confirm('Bạn có chắc muốn cấm bài viết này không?')) {
-      try {
-        const res = await axios.post(
-          `${API_BASE}/admin/posts/${id}/status`,
-          { status: "Banned" },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        )
-        if (res.data.success) {
-          setPosts(posts.map(post =>
-            post.id === id
-              ? { ...post, status: 'Banned' }
-              : post
-          ));
+  const handleApprove = (id) => {
+    setDialog({
+      open: true,
+      title: "Duyệt bài viết",
+      message: "Bạn có chắc muốn duyệt bài viết này?",
+      onConfirm: () => handleApproveConfirm(id),
+    });
+  };
+
+  const handleBanConfirm = async (id) => {
+    closeDialog();
+    try {
+      const res = await axios.post(
+        `${API_BASE}/admin/posts/${id}/status`,
+        { status: "Banned" },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         }
-      } catch (err) {
-        console.error("Lỗi khi cấm bài viết:", err);
+      );
+
+      if (res.data.success) {
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === id ? { ...post, status: "Banned" } : post
+          )
+        );
       }
+    } catch (err) {
+      console.error("Lỗi khi cấm bài viết:", err);
+    }
+  };
+
+  const handleBan = (id) => {
+    setDialog({
+      open: true,
+      title: "Cấm bài viết",
+      message: "Bạn có chắc muốn cấm bài viết này không?",
+      onConfirm: () => handleBanConfirm(id),
+    });
+  };
+
+  const handleAIReview = async () => {
+    setAiLoading(true);
+    try {
+      const pendingPosts = posts.filter(p => p.status === "Pending");
+      if (pendingPosts.length === 0) {
+        setAiLoading(false);
+        setDialog({
+          open: true,
+          title: "Không có bài viết",
+          message: "Không có bài viết nào đang chờ phê duyệt.",
+          onConfirm: closeDialog
+        });
+        return;
+      }
+      const res = await axios.post(
+        `${API_BASE}/admin/ai/review-posts`,
+        {
+          posts: pendingPosts.map(p => ({
+            id: p.id,
+            title: p.title,
+            body: p.body || "",
+          })),
+        },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        }
+      );
+      setAiLoading(false);
+      if (res.data.success) {
+        const { approvedCount, bannedCount, bannedPosts } = res.data.summary;
+        setAiResult({
+          approvedCount,
+          bannedCount,
+          bannedPosts,
+          processed: pendingPosts.map(p => {
+            const bp = bannedPosts.find(x => x.id === p.id);
+            return {
+              id: p.id,
+              title: p.title,
+              author: p.author,
+              status: bp ? "Banned" : "Approved",
+              keywords: bp?.keywords || [],
+            };
+          }),
+        });
+        setAiModalOpen(true);
+        setPosts(posts.map(p => {
+          if (p.status === "Pending") {
+            const bp = bannedPosts.find(x => x.id === p.id);
+            return { ...p, status: bp ? "Banned" : "Approved" };
+          }
+          return p;
+        }));
+      }
+    } catch (err) {
+      setAiLoading(false);
+      setDialog({
+        open: true,
+        title: "Lỗi hệ thống",
+        message: "Không thể duyệt bài viết bằng AI.",
+        onConfirm: closeDialog
+      });
     }
   };
 
@@ -164,63 +259,16 @@ const PostsManagement = () => {
                 <option value="Banned">Bị cấm</option>
               </select>
               <button
-                onClick={async () => {
-                  if (window.confirm("Bạn có muốn AI tự động duyệt tất cả bài viết đang chờ duyệt không?")) {
-                    try {
-                      const pendingPosts = posts.filter(p => p.status === "Pending");
-                      if (pendingPosts.length === 0) {
-                        alert("Không có bài viết nào đang chờ phê duyệt.");
-                        return;
-                      }
-                      const res = await axios.post(`${API_BASE}/admin/ai/review-posts`, {
-                        posts: posts
-                          .filter(p => p.status === "Pending")
-                          .map(p => ({
-                            id: p.id,
-                            title: p.title,
-                            body: p.body || "",
-                          })),
-                      }, {
-                        headers: {
-                          Authorization: `Bearer ${localStorage.getItem("token")}`,
-                        },
-                      });
-                      if (res.data.success) {
-                        const { approvedCount, bannedCount, bannedPosts } = res.data.summary;
-                        setAiResult({
-                          approvedCount,
-                          bannedCount,
-                          bannedPosts,
-                          processed: posts
-                            .filter(p => p.status === "Pending")
-                            .map(p => {
-                              const bp = bannedPosts.find(x => x.id === p.id);
-                              return {
-                                id: p.id,
-                                title: p.title,
-                                author: p.author,
-                                status: bp ? "Banned" : "Approved",
-                                keywords: bp ? bp.keywords : []
-                              };
-                            }),
-                        });
-                        setAiModalOpen(true);
-                        setPosts(posts.map(p => {
-                          if (p.status === "Pending") {
-                            const bp = bannedPosts.find(x => x.id === p.id);
-                            if (bp) return { ...p, status: "Banned" };
-                            return { ...p, status: "Approved" };
-                          }
-                          return p;
-                        }));
-                      } else {
-                        alert("AI duyệt bài viết thất bại.");
-                      }
-                    } catch (err) {
-                      alert("AI duyệt bài viết thất bại!");
-                      console.error(err);
+                onClick={() => {
+                  setDialog({
+                    open: true,
+                    title: "Duyệt bài viết bằng AI",
+                    message: "Bạn có muốn AI duyệt toàn bộ bài viết đang chờ phê duyệt?",
+                    onConfirm: () => {
+                      closeDialog();
+                      handleAIReview();
                     }
-                  }
+                  });
                 }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition"
               >
@@ -533,6 +581,16 @@ const PostsManagement = () => {
         setAiModalOpen={setAiModalOpen}
         aiPerPage={aiPerPage}
       />
+      <LoadingAIModal open={aiLoading} />
+      {dialog.open && (
+        <Dialog
+          open={dialog.open}
+          title={dialog.title}
+          message={dialog.message}
+          onConfirm={dialog.onConfirm}
+          onClose={closeDialog}
+        />
+      )}
     </div>
   );
 };
@@ -665,6 +723,20 @@ const AIDialog = ({
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const LoadingAIModal = ({ open }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 z-[3000] flex items-center justify-center">
+      <div className="bg-white px-10 py-8 rounded-xl shadow-xl text-center">
+        <div className="animate-spin h-10 w-10 border-4 border-indigo-600 border-t-transparent mx-auto rounded-full"></div>
+        <p className="mt-4 text-lg font-semibold text-gray-700">
+          AI đang duyệt bài viết, vui lòng chờ...
+        </p>
       </div>
     </div>
   );

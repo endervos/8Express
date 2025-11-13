@@ -6,6 +6,7 @@ import {
   UserCheck
 } from "lucide-react";
 import axios from "axios";
+import Dialog from "./Dialog";
 
 const API_BASE = "http://localhost:5000";
 
@@ -103,6 +104,28 @@ const UsersManagement = () => {
   const [nameSearch, setNameSearch] = useState("");
   const [emailSearch, setEmailSearch] = useState("");
   const usersPerPage = 5;
+  const [dialog, setDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
+  const openDialog = (title, message, onConfirm = null) => {
+    setDialog({
+      open: true,
+      title,
+      message,
+      onConfirm,
+    });
+  };
+  const closeDialog = () => {
+    setDialog({
+      open: false,
+      title: "",
+      message: "",
+      onConfirm: null,
+    });
+  };
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -141,11 +164,11 @@ const UsersManagement = () => {
               : u
           )
         );
-        alert(res.data.message);
+        openDialog("Thành công", res.data.message);
       }
     } catch (err) {
       console.error("Lỗi khi thay đổi trạng thái:", err);
-      alert("Không thể thay đổi trạng thái người dùng.");
+      openDialog("Lỗi", "Không thể thay đổi trạng thái người dùng.");
     }
   };
 
@@ -350,6 +373,14 @@ const UsersManagement = () => {
           )}
         </div>
       </div>
+      {dialog.open && (
+        <Dialog
+          title={dialog.title}
+          message={dialog.message}
+          onClose={closeDialog}
+          onConfirm={dialog.onConfirm}
+        />
+      )}
     </>
   );
 };
