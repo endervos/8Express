@@ -560,12 +560,18 @@ router.post("/ai/review-posts", async (req, res) => {
         let bannedCount = 0;
         let bannedPosts = [];
         for (const post of posts) {
+            const record = await Post.findByPk(post.id);
+            if (!record || record.status !== "Pending") {
+                continue;
+            }
             const py = spawn("python", [scriptPath]);
             let output = "";
             const inputData = JSON.stringify({ title: post.title, body: post.body });
             const resultPromise = new Promise((resolve, reject) => {
                 py.stdout.on("data", (data) => (output += data.toString()));
-                py.stderr.on("data", (data) => console.error("AI error:", data.toString()));
+                py.stderr.on("data", (data) =>
+                    console.error("AI error:", data.toString())
+                );
                 py.on("close", () => {
                     try {
                         const result = JSON.parse(output);

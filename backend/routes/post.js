@@ -199,9 +199,13 @@ router.get("/:id", async (req, res) => {
         { name: "Angry", icon: reactionMap.angry || "😡", count: post.angry_count },
       ],
       shareCount: shareCount.c,
-      author: post.user_id ? post.User?.full_name || "Ẩn danh" : post.Admin?.full_name || "Ẩn danh",
+      author: post.user_id
+        ? post.User?.full_name || "Ẩn danh"
+        : post.Admin?.full_name || "Ẩn danh",
       authorRole: post.user_id ? "user" : "admin",
-      authorAvatar: toDataUrl((post.Admin?.avatar || post.User?.avatar), "image/jpeg"),
+      authorAvatar: post.user_id
+        ? toDataUrl(post.User?.avatar, "image/jpeg")
+        : toDataUrl(post.Admin?.avatar, "image/jpeg"),
     };
     res.json({ success: true, data });
   } catch (err) {
@@ -230,7 +234,7 @@ router.put("/:id", async (req, res) => {
     const isAuthor =
       (decoded.role === "user" && decoded.id === post.user_id) ||
       (decoded.role === "admin" && decoded.id === post.admin_id);
-    if (!isAuthor && decoded.role !== "admin") {
+    if (!isAuthor) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa bài viết này.",
@@ -311,7 +315,7 @@ router.delete("/:id", async (req, res) => {
     const isAuthor =
       (decoded.role === "user" && decoded.id === post.user_id) ||
       (decoded.role === "admin" && decoded.id === post.admin_id);
-    if (!isAuthor && decoded.role !== "admin") {
+    if (!isAuthor) {
       return res.status(403).json({
         success: false,
         message: "Không có quyền sửa bài viết này.",

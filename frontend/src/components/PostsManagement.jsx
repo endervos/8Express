@@ -14,6 +14,10 @@ const PostsManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage] = useState(5);
   const [totalPages, setTotalPages] = useState(1);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+  const [aiPage, setAiPage] = useState(1);
+  const aiPerPage = 5;
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -97,6 +101,7 @@ const PostsManagement = () => {
       setCurrentPage(pageNumber);
     }
   };
+
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   const filteredPosts = posts.filter((post) => {
@@ -143,7 +148,6 @@ const PostsManagement = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
-
             <div className="flex gap-2 items-center shrink-0">
               <select
                 value={filterStatus}
@@ -183,20 +187,31 @@ const PostsManagement = () => {
                       });
                       if (res.data.success) {
                         const { approvedCount, bannedCount, bannedPosts } = res.data.summary;
-                        let msg = `AI đã duyệt ${approvedCount + bannedCount} bài.\n` +
-                          `${approvedCount} bài hợp lệ.\n` +
-                          `${bannedCount} bài vi phạm.`;
-                        if (bannedPosts.length > 0) {
-                          msg += "\n\nCác bài vi phạm:\n";
-                          bannedPosts.forEach(bp => {
-                            msg += `• ${bp.title} → từ khóa: ${bp.keywords.join(", ") || "Không xác định"}\n`;
-                          });
-                        }
-                        alert(msg);
+                        setAiResult({
+                          approvedCount,
+                          bannedCount,
+                          bannedPosts,
+                          processed: posts
+                            .filter(p => p.status === "Pending")
+                            .map(p => {
+                              const bp = bannedPosts.find(x => x.id === p.id);
+                              return {
+                                id: p.id,
+                                title: p.title,
+                                author: p.author,
+                                status: bp ? "Banned" : "Approved",
+                                keywords: bp ? bp.keywords : []
+                              };
+                            }),
+                        });
+                        setAiModalOpen(true);
                         setPosts(posts.map(p => {
-                          const bp = bannedPosts.find(x => x.id === p.id);
-                          if (bp) return { ...p, status: "Banned" };
-                          return { ...p, status: "Approved" };
+                          if (p.status === "Pending") {
+                            const bp = bannedPosts.find(x => x.id === p.id);
+                            if (bp) return { ...p, status: "Banned" };
+                            return { ...p, status: "Approved" };
+                          }
+                          return p;
                         }));
                       } else {
                         alert("AI duyệt bài viết thất bại.");
@@ -337,7 +352,6 @@ const PostsManagement = () => {
             Trang <span className="font-medium">{currentPage}</span> /{' '}
             <span className="font-medium">{totalPages}</span>
           </div>
-
           <div className="flex gap-2">
             <button
               onClick={() => paginate(currentPage - 1)}
@@ -511,6 +525,14 @@ const PostsManagement = () => {
           </div>
         </div>
       )}
+      <AIDialog
+        aiModalOpen={aiModalOpen}
+        aiResult={aiResult}
+        aiPage={aiPage}
+        setAiPage={setAiPage}
+        setAiModalOpen={setAiModalOpen}
+        aiPerPage={aiPerPage}
+      />
     </div>
   );
 };
@@ -540,5 +562,112 @@ const CommentItem = ({ comment, level }) => (
     </div>
   </div>
 );
+
+const AIDialog = ({
+  aiModalOpen,
+  aiResult,
+  aiPage,
+  setAiPage,
+  setAiModalOpen,
+  aiPerPage
+}) => {
+  if (!aiModalOpen || !aiResult) return null;
+  const { approvedCount, bannedCount, processed } = aiResult;
+  const total = processed.length;
+  const startIdx = (aiPage - 1) * aiPerPage;
+  const endIdx = startIdx + aiPerPage;
+  const pageData = processed.slice(startIdx, endIdx);
+  const totalPages = Math.ceil(total / aiPerPage);
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-gray-800">Kết quả duyệt bài bằng AI</h2>
+          <button
+            onClick={() => setAiModalOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-lg"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-green-50 p-4 rounded-lg shadow text-center">
+              <div className="text-3xl font-bold text-green-700">{approvedCount}</div>
+              <div className="text-sm text-green-800">Bài hợp lệ</div>
+            </div>
+            <div className="bg-red-50 p-4 rounded-lg shadow text-center">
+              <div className="text-3xl font-bold text-red-700">{bannedCount}</div>
+              <div className="text-sm text-red-800">Bài vi phạm</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg shadow text-center">
+              <div className="text-3xl font-bold text-blue-700">{total}</div>
+              <div className="text-sm text-blue-800">Tổng số bài xử lý</div>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full border rounded-lg">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-3 text-left text-xs font-semibold text-gray-600">Tiêu đề</th>
+                  <th className="p-3 text-left text-xs font-semibold text-gray-600">Người đăng</th>
+                  <th className="p-3 text-left text-xs font-semibold text-gray-600">Trạng thái</th>
+                  <th className="p-3 text-left text-xs font-semibold text-gray-600">Từ khoá vi phạm</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {pageData.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50">
+                    <td className="p-3">{item.title}</td>
+                    <td className="p-3">{item.author}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${item.status === "Approved"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                          }`}
+                      >
+                        {item.status === "Approved" ? "Đã duyệt" : "Bị cấm"}
+                      </span>
+                    </td>
+                    <td className="p-3 text-sm text-gray-700">
+                      {item.keywords?.length > 0 ? item.keywords.join(", ") : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-center mt-4 gap-2">
+            <button
+              disabled={aiPage === 1}
+              onClick={() => setAiPage(aiPage - 1)}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Trước
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => setAiPage(i + 1)}
+                className={`px-3 py-1 border rounded ${aiPage === i + 1 ? "bg-indigo-600 text-white" : ""
+                  }`}
+              >
+                {i + 1}
+              </button>
+            ))}
+            <button
+              disabled={aiPage === totalPages}
+              onClick={() => setAiPage(aiPage + 1)}
+              className="px-3 py-1 border rounded disabled:opacity-50"
+            >
+              Sau
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default PostsManagement;

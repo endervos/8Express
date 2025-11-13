@@ -844,8 +844,6 @@ const PostDetail = ({ isLoggedIn, userInfo }) => {
   );
 };
 
-export default PostDetail;
-
 const CommentItem = ({
   comment,
   level = 0,
@@ -953,3 +951,5 @@ const CommentItem = ({
     </div>
   );
 };
+
+export default PostDetail;
