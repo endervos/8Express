@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import logo from "../images/logo.png";
 import Dialog from "./Dialog";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `http://${window.location.hostname}:5000`;
 
 const PostDetail = ({ isLoggedIn, userInfo }) => {
   const { postId } = useParams();

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import Dialog from "./Dialog";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `http://${window.location.hostname}:5000`;
 
 const Register = () => {
   const navigate = useNavigate();

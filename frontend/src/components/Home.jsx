@@ -8,6 +8,8 @@ import {
 import './Home.css';
 import logo from '../images/logo.png';
 
+const API_BASE = `http://${window.location.hostname}:5000`;
+
 const topicIcons = { zap: Zap, book: Book, atom: Atom, sun: Sun, code: Code };
 
 const PostCard = ({ post, onViewDetail, navigate }) => {
@@ -46,13 +48,11 @@ const PostCard = ({ post, onViewDetail, navigate }) => {
           </span>
         </div>
       </div>
-
       <div onClick={() => onViewDetail(post)} className="cursor-pointer">
         <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition">
           {post.title}
         </h3>
         <p className="text-gray-600 mb-4 whitespace-pre-line">{post.body}</p>
-
         <div className="flex items-center text-sm text-gray-500 gap-4">
           <div className="flex flex-wrap items-center gap-2">
             {reactions
@@ -87,19 +87,19 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
   const [topAuthors, setTopAuthors] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/posts?status=Approved')
+    axios.get(`${API_BASE}/posts?status=Approved`)
       .then(res => {
         if (res.data.success) setPosts(res.data.data);
       })
       .catch(err => console.error("Lỗi lấy posts:", err));
 
-    axios.get('http://localhost:5000/topics')
+    axios.get(`${API_BASE}/topics`)
       .then(res => {
         if (res.data.success) setCategories(res.data.data);
       })
       .catch(err => console.error("Lỗi lấy topics:", err));
 
-    axios.get('http://localhost:5000/profile/top-authors/all')
+    axios.get(`${API_BASE}/profile/top-authors/all`)
       .then(res => {
         if (res.data.success) setTopAuthors(res.data.data);
       })
@@ -110,9 +110,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
     const fetchInteracted = async () => {
       if (!isLoggedIn || !userInfo?.id) return;
       try {
-        const res = await axios.get(
-          `http://localhost:5000/posts/interacted/${userInfo.id}?role=${userInfo.role}`
-        );
+        const res = await axios.get(`${API_BASE}/posts/interacted/${userInfo.id}?role=${userInfo.role}`)
         if (res.data.success) {
           const approved = res.data.data.filter(p => p.status === "Approved");
           setInteracted(approved);
@@ -226,7 +224,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
@@ -252,7 +249,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 </button>
               </nav>
             </div>
-
             <div className="flex items-center gap-3">
               <div className="relative hidden lg:block">
                 <input
@@ -264,7 +260,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 />
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
-
               {isLoggedIn ? (
                 <div className="flex items-center gap-3">
                   {userInfo?.role === 'admin' && (
@@ -306,8 +301,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               )}
             </div>
           </div>
-
-          {/* Mobile Search */}
           <div className="lg:hidden mt-3">
             <div className="relative">
               <input
@@ -322,11 +315,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
           </div>
         </div>
       </header>
-
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="bg-white rounded-xl shadow-md p-4 sticky top-24">
               <h4 className="text-lg font-bold text-center pb-3 mb-3 border-b category-title section-header-accent">
@@ -361,10 +351,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               </div>
             </div>
           </aside>
-
-          {/* Center Content - Posts */}
           <main className="lg:col-span-6">
-            {/* Tabs */}
             <div className="flex border-b border-gray-200 mb-6 bg-white rounded-xl shadow-sm overflow-hidden">
               <button
                 onClick={() => setActiveTab('new')}
@@ -388,8 +375,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 <Heart size={18} className="inline mr-1 -mt-0.5" /> Đã tương tác ({interacted.length})
               </button>
             </div>
-
-            {/* Posts List */}
             <div className="space-y-4">
               {paginatedPosts.length > 0 ? (
                 paginatedPosts.map(post => (
@@ -411,8 +396,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                   </p>
                 </div>
               )}
-
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center mt-8 gap-2 flex-wrap">
                   <button
@@ -423,9 +406,7 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                     <ChevronLeft size={16} />
                     <span className="hidden sm:inline">Trước</span>
                   </button>
-
                   {renderPaginationButtons()}
-
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
@@ -438,11 +419,8 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
               )}
             </div>
           </main>
-
-          {/* Right Sidebar */}
           <aside className="hidden lg:block lg:col-span-3">
             <div className="bg-white rounded-xl shadow-md p-4 sticky top-24 space-y-6">
-              {/* Top Posts */}
               <div>
                 <h4 className="text-lg font-bold text-center pb-3 mb-3 border-b category-title section-header-accent">
                   Bài viết phổ biến
@@ -457,12 +435,10 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                       <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-sm shadow-sm">
                         {index + 1}
                       </span>
-
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 text-sm mb-1 whitespace-pre-line line-clamp-2">
                           {post.title}
                         </p>
-
                         <div className="flex items-center gap-3 text-xs text-gray-500">
                           <div className="flex items-center gap-1 flex-wrap">
                             {post.reactions &&
@@ -489,8 +465,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                   ))}
                 </div>
               </div>
-
-              {/* Featured Authors */}
               <div>
                 <h4 className="text-lg font-bold pb-3 mb-3 border-b category-title section-header-accent">
                   Tác giả nổi bật
@@ -530,8 +504,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
           </aside>
         </div>
       </div>
-
-      {/* Footer */}
       <footer className="mt-12 bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-800 text-white">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
@@ -596,7 +568,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 </li>
               </ul>
             </div>
-
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">Liên hệ hợp tác</h4>
               <ul className="space-y-3">
@@ -620,7 +591,6 @@ const Home = ({ isLoggedIn, userInfo, onLogout }) => {
                 </li>
               </ul>
             </div>
-
             <div>
               <h4 className="font-bold text-lg mb-6 text-white">8Express © Copyright 2025</h4>
               <ul className="space-y-3">

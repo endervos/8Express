@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Dialog from "./Dialog";
 
+const API_BASE = `http://${window.location.hostname}:5000`;
+
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,7 +41,7 @@ const VerifyEmail = () => {
       return;
     }
     try {
-      const res = await fetch("http://localhost:5000/auth/verify-otp", {
+      const res = await fetch(`${API_BASE}/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code }),
@@ -47,7 +49,7 @@ const VerifyEmail = () => {
       const data = await res.json();
       if (data.success) {
         openDialog("Đang tạo tài khoản", "Xác thực thành công! Hệ thống đang tạo tài khoản...");
-        const registerRes = await fetch("http://localhost:5000/auth/register", {
+        const registerRes = await fetch(`${API_BASE}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),

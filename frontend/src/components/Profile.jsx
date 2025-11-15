@@ -9,6 +9,8 @@ import axios from 'axios';
 import logo from '../images/logo.png';
 import Dialog from "./Dialog";
 
+const API_BASE = `http://${window.location.hostname}:5000`;
+
 const Profile = ({ userInfo, onUpdateUser }) => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -41,7 +43,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
     const fetchUserPosts = async (viewedUserId, isSelf, viewedRole) => {
       try {
         const statusParam = isSelf ? "all" : "Approved";
-        const res = await axios.get(`http://localhost:5000/posts?status=${statusParam}`);
+        const res = await axios.get(`${API_BASE}/posts?status=${statusParam}`);
         if (res.data.success) {
           const filtered = res.data.data.filter((p) => {
             if (viewedRole === "admin") {
@@ -66,8 +68,8 @@ const Profile = ({ userInfo, onUpdateUser }) => {
         const params = new URLSearchParams(window.location.search);
         const viewedRole = params.get("role") || userInfo.role || "user";
         const url = id
-          ? `http://localhost:5000/profile/${id}?role=${viewedRole}`
-          : `http://localhost:5000/profile`;
+          ? `${API_BASE}/profile/${id}?role=${viewedRole}`
+          : `${API_BASE}/profile`;
         const res = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -78,8 +80,8 @@ const Profile = ({ userInfo, onUpdateUser }) => {
             ((u.role || viewedRole) === userInfo?.role);
           setIsSelf(self);
           const [followersRes, followingRes] = await Promise.all([
-            axios.get(`http://localhost:5000/follow/followers/${u.id}?role=${viewedRole}`),
-            axios.get(`http://localhost:5000/follow/following/${u.id}?role=${viewedRole}`)
+            axios.get(`${API_BASE}/follow/followers/${u.id}?role=${viewedRole}`),
+            axios.get(`${API_BASE}/follow/following/${u.id}?role=${viewedRole}`)
           ]);
           const followersCount = followersRes.data?.count ?? (followersRes.data?.data?.length ?? 0);
           const followingCount = followingRes.data?.count ?? (followingRes.data?.data?.length ?? 0);
@@ -113,7 +115,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
 
     const fetchSharedPosts = async (userId, role) => {
       try {
-        const res = await axios.get(`http://localhost:5000/share/${userId}?role=${role}`);
+        const res = await axios.get(`${API_BASE}/share/${userId}?role=${role}`);
         if (res.data.success) setSharedPosts(res.data.data);
       } catch (err) {
         console.error("Lỗi tải bài viết chia sẻ:", err);
@@ -126,9 +128,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
     if (!id || !userInfo?.id || !profileData?.role) return;
     const checkIfFollowing = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/follow/followers/${id}?role=${profileData.role}`
-        );
+        const res = await axios.get(`${API_BASE}/follow/followers/${id}?role=${profileData.role}`);
         if (res.data.success) {
           const is = res.data.data.some(
             (f) => f.id === userInfo.id && f.role === userInfo.role
@@ -172,7 +172,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
           : undefined,
       };
       const res = await axios.put(
-        `http://localhost:5000/profile/${profileData.id}`,
+        `${API_BASE}/profile/${profileData.id}`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -219,7 +219,7 @@ const Profile = ({ userInfo, onUpdateUser }) => {
   const fetchFollowList = async (type) => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/follow/${type}/${profileData.id}?role=${profileData.role}`
+        `${API_BASE}/follow/${type}/${profileData.id}?role=${profileData.role}`
       );
       if (res.data.success) {
         setListData(res.data.data);
@@ -319,13 +319,13 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                       try {
                         if (isFollowing) {
                           await axios.delete(
-                            `http://localhost:5000/follow/${profileData.id}?targetRole=${profileData.role}`,
+                            `${API_BASE}/follow/${profileData.id}?targetRole=${profileData.role}`,
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
                           setIsFollowing(false);
                         } else {
                           await axios.post(
-                            `http://localhost:5000/follow/${profileData.id}?targetRole=${profileData.role}`,
+                            `${API_BASE}/follow/${profileData.id}?targetRole=${profileData.role}`,
                             {},
                             { headers: { Authorization: `Bearer ${token}` } }
                           );
@@ -333,8 +333,8 @@ const Profile = ({ userInfo, onUpdateUser }) => {
                         }
                         try {
                           const [followersRes, followingRes] = await Promise.all([
-                            axios.get(`http://localhost:5000/follow/followers/${profileData.id}?role=${profileData.role}`),
-                            axios.get(`http://localhost:5000/follow/following/${profileData.id}?role=${profileData.role}`),
+                            axios.get(`${API_BASE}/follow/followers/${profileData.id}?role=${profileData.role}`),
+                            axios.get(`${API_BASE}/follow/following/${profileData.id}?role=${profileData.role}`),
                           ]);
                           setProfileData((prev) => ({
                             ...prev,

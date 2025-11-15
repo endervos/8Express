@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Users, FileText } from 'lucide-react';
 
+const API_BASE = `http://${window.location.hostname}:5000`;
+
 const Stats = () => {
   const [stats, setStats] = useState(null);
   const [activities, setActivities] = useState([]);
@@ -9,7 +11,7 @@ const Stats = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/admin/stats?page=${page}&limit=5`);
+        const res = await fetch(`${API_BASE}/admin/stats?page=${page}&limit=5`);
         const json = await res.json();
         if (json.success) {
           setStats(json.data);

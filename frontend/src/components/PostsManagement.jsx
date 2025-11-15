@@ -3,7 +3,7 @@ import { Search, Ban, Eye, X, CheckCircle, MessageSquare, Share } from 'lucide-r
 import axios from "axios";
 import Dialog from "./Dialog";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = `http://${window.location.hostname}:5000`;
 
 const PostsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');

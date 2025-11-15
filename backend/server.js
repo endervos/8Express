@@ -4,6 +4,19 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { sequelize } = require("./models");
+const os = require("os");
+
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name in interfaces) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return "localhost";
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,7 +25,6 @@ app.use(cors());
 app.use(bodyParser.json({ limit: "25mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "25mb" }));
 
-// ===== Kiểm tra kết nối DB =====
 sequelize.authenticate()
   .then(() => console.log("Kết nối MySQL thành công"))
   .catch(err => console.error("Lỗi kết nối MySQL:", err));
@@ -21,7 +33,6 @@ sequelize.sync()
   .then(() => console.log("Sequelize đã sync"))
   .catch(err => console.error("Lỗi sync DB:", err));
 
-// ===== ROUTES =====
 app.get("/", (req, res) => res.send("Server 8Express đang hoạt động!"));
 app.use("/auth", require("./routes/auth"));
 app.use("/posts", require("./routes/post"));
@@ -32,4 +43,8 @@ app.use("/comments", require("./routes/comments"));
 app.use("/share", require("./routes/share"));
 app.use("/admin", require("./routes/admin"));
 
-app.listen(PORT, () => console.log(`Server đang chạy tại http://localhost:${PORT}`));
+const localIP = getLocalIP();
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server đang chạy tại http://${localIP}:${PORT}`);
+  console.log(`API_URL=${localIP}:${PORT}`);
+});

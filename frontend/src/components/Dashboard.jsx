@@ -24,7 +24,6 @@ const Dashboard = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -34,8 +33,6 @@ const Dashboard = ({ onLogout }) => {
         }}
         onGoHome={() => navigate('/')}
       />
-
-      {/* Main Content */}
       <div className="ml-64 flex-1 p-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800">
@@ -44,8 +41,6 @@ const Dashboard = ({ onLogout }) => {
             {activeTab === 'posts' && 'Quản lý bài viết'}
           </h2>
         </div>
-
-        {/* Render Content */}
         {renderContent()}
       </div>
     </div>

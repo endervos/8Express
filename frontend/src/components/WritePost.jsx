@@ -3,6 +3,8 @@ import { ArrowLeft, Image, Eye, Send, BookOpen, Video, Music } from 'lucide-reac
 import { useNavigate } from 'react-router-dom';
 import Dialog from "./Dialog";
 
+const API_BASE = `http://${window.location.hostname}:5000`;
+
 const WritePost = ({ isLoggedIn }) => {
   const navigate = useNavigate();
   const [postData, setPostData] = useState({
@@ -45,7 +47,7 @@ const WritePost = ({ isLoggedIn }) => {
     }
     const fetchTopics = async () => {
       try {
-        const res = await fetch('http://localhost:5000/topics');
+        const res = await fetch(`${API_BASE}/topics`);
         const data = await res.json();
         if (data.success) {
           setTopics(data.data);
@@ -89,7 +91,7 @@ const WritePost = ({ isLoggedIn }) => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/posts/create', {
+      const res = await fetch(`${API_BASE}/posts/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
