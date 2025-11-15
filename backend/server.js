@@ -1,10 +1,13 @@
 "use strict";
-require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { sequelize } = require("./models");
 const os = require("os");
+
+require("dotenv").config({
+  path: process.env.NODE_ENV === "docker" ? ".env.docker" : ".env.local"
+});
 
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -29,9 +32,11 @@ sequelize.authenticate()
   .then(() => console.log("Kết nối MySQL thành công"))
   .catch(err => console.error("Lỗi kết nối MySQL:", err));
 
-sequelize.sync()
-  .then(() => console.log("Sequelize đã sync"))
-  .catch(err => console.error("Lỗi sync DB:", err));
+if (process.env.NODE_ENV !== "docker") {
+  sequelize.sync()
+    .then(() => console.log("Sequelize đã sync"))
+    .catch(err => console.error("Lỗi sync DB:", err));
+}
 
 app.get("/", (req, res) => res.send("Server 8Express đang hoạt động!"));
 app.use("/auth", require("./routes/auth"));

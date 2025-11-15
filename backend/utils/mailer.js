@@ -13,7 +13,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
 async function sendVerificationEmail(to, code) {
   try {
     const info = await transporter.sendMail({
@@ -32,7 +31,6 @@ async function sendVerificationEmail(to, code) {
         </div>
       `,
     });
-
     console.log("Gửi mail thành công:", info.messageId);
     return true;
   } catch (error) {

@@ -90,6 +90,21 @@ npm start
 
 Xem mọi dữ liệu mẫu trong file `backend/seeders/initial-data.js` hoặc file `database/Sample.sql`.
 
+### e. Chạy bằng Docker *(tùy chọn)*
+
+- Khởi động bằng terminal của Visual Studio Code
+  + Nếu là lần đầu, chưa xây dựng container:
+
+  ```bash
+  docker compose up --build
+  ```
+
+  + Các lần sau chỉ cần chạy, không cần build lại nữa:
+
+  ```bash
+  docker compose up
+  ```
+
 ---
 
 ## 💻 Môi trường
@@ -116,7 +131,7 @@ Gặp lỗi hoặc có thắc mắc? Hãy tạo [Issue](https://github.com/your-
 ## 🚧 Tính năng đang phát triển
 
 - Triển khai server Ubuntu
-- Đóng gói Docker
+- Host public cho Website
 - Phát triển phiên bản mobile (Android/iOS)
 
 ---

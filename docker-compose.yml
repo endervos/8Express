@@ -1,0 +1,37 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: 8express_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: 8Express
+      MYSQL_USER: vos
+      MYSQL_PASSWORD: vos!12345678
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  backend:
+    build: ./backend
+    container_name: 8express_backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.docker
+    depends_on:
+      - mysql
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    container_name: 8express_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mysql_data:
