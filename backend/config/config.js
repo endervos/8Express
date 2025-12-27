@@ -13,6 +13,7 @@ module.exports = {
     port: process.env.DB_PORT,
     dialect: "mysql",
     timezone: "+07:00",
+    logging: false,
     dialectOptions: {
       charset: "utf8mb4",
       dateStrings: true,
@@ -24,7 +25,6 @@ module.exports = {
       timestamps: false
     }
   },
-
   docker: {
     username: process.env.DB_USER,
     password: process.env.DB_PASS,
@@ -33,6 +33,7 @@ module.exports = {
     port: process.env.DB_PORT,
     dialect: "mysql",
     timezone: "+07:00",
+    logging: false,
     dialectOptions: {
       charset: "utf8mb4",
       dateStrings: true,

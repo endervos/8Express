@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
-import logo from '../images/logo.png';
+import logo from '../images/Logo.png';
 import Dialog from "./Dialog";
 
 const API_BASE = `http://${window.location.hostname}:5000`;

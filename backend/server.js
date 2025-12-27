@@ -29,12 +29,10 @@ app.use(bodyParser.json({ limit: "25mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "25mb" }));
 
 sequelize.authenticate()
-  .then(() => console.log("Kết nối MySQL thành công"))
   .catch(err => console.error("Lỗi kết nối MySQL:", err));
 
 if (process.env.NODE_ENV !== "docker") {
   sequelize.sync()
-    .then(() => console.log("Sequelize đã sync"))
     .catch(err => console.error("Lỗi sync DB:", err));
 }
 
@@ -51,5 +49,4 @@ app.use("/admin", require("./routes/admin"));
 const localIP = getLocalIP();
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server đang chạy tại http://${localIP}:${PORT}`);
-  console.log(`API_URL=${localIP}:${PORT}`);
 });

@@ -52,11 +52,11 @@ git clone https://github.com/endervos/8Express.git
 
 ### b. Cấu hình cơ sở dữ liệu
 
-Mở file `backend/config/config.json` và cập nhật:
+Mở file `backend/.env.local` và cập nhật:
 
 ```bash
-"username": "YOUR_USERNAME"
-"password": "YOUR_PASSWORD"
+DB_USER: "YOUR_USERNAME"
+DB_PASS: "YOUR_PASSWORD"
 ```
 
 ### c. Chạy ứng dụng
