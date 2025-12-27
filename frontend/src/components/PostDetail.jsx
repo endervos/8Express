@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { ArrowLeft, MessageSquare, Share, MoreVertical } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
-import logo from "../Images/logo.png";
-
+import logo from "../images/logo.png";
 import Dialog from "./Dialog";
 
 const API_BASE = `http://${window.location.hostname}:5000`;
